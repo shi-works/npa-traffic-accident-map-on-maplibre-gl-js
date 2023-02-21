@@ -80,7 +80,7 @@
         maplibregl.addProtocol("pmtiles", protocol.tile);
 
         // let PMTILES_URL = "https://xs489works.xsrv.jp/MapLibreGLJS/11-01/honhyo_2019-2021_convert.pmtiles";
-        let PMTILES_URL = "https://github.com/shi-works/traffic-accident-map/blob/main/honhyo_2019-2021_convert.pmtiles";
+        let PMTILES_URL = "./honhyo_2019-2021_convert.pmtiles";
 
         const p = new pmtiles.PMTiles(PMTILES_URL)
         p.getMetadata().then((res) => console.log(res));
