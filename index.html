@@ -1,0 +1,583 @@
+<html>
+
+<head>
+    <title>警察庁 交通事故マップ（PMTiles）</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.css" crossorigin="anonymous">
+    <script src="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.js" crossorigin="anonymous"></script>
+    <script src="https://unpkg.com/pmtiles@2.7.0/dist/index.js"></script>
+    <!--<script src="https://unpkg.com/deck.gl@^8.8.0/dist.min.js"></script>-->
+    <style>
+        body {
+            margin: 0;
+        }
+
+        #map {
+            height: 100%;
+            width: 100%;
+        }
+
+        #info {
+            position: absolute;
+            top: 0;
+            right: 0;
+            overflow: auto;
+            margin: 0px auto;
+            border: none;
+            background: rgba(255, 255, 255, 0.8);
+        }
+
+        .map-overlay {
+            font: bold 12px/20px 'Helvetica Neue', Arial, Helvetica, sans-serif;
+            position: absolute;
+            width: 240px;
+            bottom: 50px;
+            left: 0;
+            padding: 10px;
+        }
+
+        .map-overlay .map-overlay-inner {
+            background-color: #fff;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+            border-radius: 3px;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+
+        .map-overlay label {
+            display: block;
+            margin: 0 0 0px;
+        }
+
+        .map-overlay input {
+            background-color: transparent;
+            display: inline-block;
+            width: 100%;
+            position: relative;
+            margin: 0;
+            cursor: ew-resize;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="map"></div>
+    <pre id="info"></pre>
+    <div class="map-overlay top">
+        <div class="map-overlay-inner">
+            <!--
+            <label>空中写真 撮影時期: <span id="slider-year-value">全国最新写真</span></label>
+            <input id="slider-year" type="range" min="0" max="8" step="1" value="8">
+            -->
+            <label>空中写真 不透明度: <span id="slider-opacity-value">100%</span></label>
+            <input id="slider-opacity" type="range" min="0" max="100" step="0" value="100">
+        </div>
+    </div>
+    <!-- Load the `maplibre-gl-geocoder` plugin. -->
+    <script src="https://unpkg.com/@maplibre/maplibre-gl-geocoder@1.2.0/dist/maplibre-gl-geocoder.min.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/@maplibre/maplibre-gl-geocoder@1.2.0/dist/maplibre-gl-geocoder.css"
+        type="text/css" />
+    <script type="text/javascript">
+        // add the PMTiles plugin to the maplibregl global.
+        let protocol = new pmtiles.Protocol();
+        maplibregl.addProtocol("pmtiles", protocol.tile);
+
+        // let PMTILES_URL = "https://protomaps.github.io/PMTiles/protomaps(vector)ODbL_firenze.pmtiles";
+        let PMTILES_URL = "https://xs489works.xsrv.jp/MapLibreGLJS/11-01/honhyo_2019-2021_utf-8.pmtiles";
+
+        const p = new pmtiles.PMTiles(PMTILES_URL)
+
+        // this is so we share one instance across the JS code and the map renderer
+        protocol.add(p);
+
+        const map = new maplibregl.Map({
+            container: 'map',
+            style: './std.json',
+            // style: 'https://gsi-cyberjapan.github.io/gsivectortile-mapbox-gl-js/std.json',
+            zoom: 14,
+            maxZoom: 23,
+            minZoom: 4,
+            center: [139.4677687, 35.8887418],
+            maplibreLogo: true,
+            // 既存Attributionを非表示
+            attributionControl: false
+        })
+
+        // ズーム・回転
+        map.addControl(new maplibregl.NavigationControl());
+
+        // フルスクリーンモードのオンオフ
+        map.addControl(new maplibregl.FullscreenControl());
+
+        // 現在位置表示
+        map.addControl(new maplibregl.GeolocateControl({
+            positionOptions: {
+                enableHighAccuracy: false
+            },
+            fitBoundsOptions: { maxZoom: 18 },
+            trackUserLocation: true,
+            showUserLocation: true
+        }));
+
+        // スケール表示
+        map.addControl(new maplibregl.ScaleControl({
+            maxWidth: 200,
+            unit: 'metric'
+        }));
+
+        // Attributionを折りたたみ表示
+        map.addControl(new maplibregl.AttributionControl({
+            compact: true
+        }));
+
+        // ジオコーダー追加
+        var geocoder_api = {
+            forwardGeocode: async (config) => {
+                const features = [];
+                try {
+                    let request =
+                        'https://nominatim.openstreetmap.org/search?q=' +
+                        config.query +
+                        '&format=geojson&polygon_geojson=1&addressdetails=1';
+                    const response = await fetch(request);
+                    const geojson = await response.json();
+                    for (let feature of geojson.features) {
+                        let center = [
+                            feature.bbox[0] +
+                            (feature.bbox[2] - feature.bbox[0]) / 2,
+                            feature.bbox[1] +
+                            (feature.bbox[3] - feature.bbox[1]) / 2
+                        ];
+                        let point = {
+                            type: 'Feature',
+                            geometry: {
+                                type: 'Point',
+                                coordinates: center
+                            },
+                            place_name: feature.properties.display_name,
+                            properties: feature.properties,
+                            text: feature.properties.display_name,
+                            place_type: ['place'],
+                            center: center
+                        };
+                        features.push(point);
+                    }
+                } catch (e) {
+                    console.error(`Failed to forwardGeocode with error: ${e}`);
+                }
+
+                return {
+                    features: features
+                };
+            }
+        };
+
+        map.addControl(
+            new MaplibreGeocoder(geocoder_api, {
+                maplibregl: maplibregl
+            }), 'top-left');
+
+        const sliderOpactiy = document.getElementById('slider-opacity');
+        const sliderOpactiyValue = document.getElementById('slider-opacity-value');
+
+        map.on('load', () => {
+
+            /*
+            // 空中写真（1928年頃）
+            map.addSource('ort_1928', {
+                type: 'raster',
+                tiles: ['https://cyberjapandata.gsi.go.jp/xyz/ort_1928/{z}/{x}/{y}.png'],
+                tileSize: 256,
+                attribution: '<a href="https://maps.gsi.go.jp/development/ichiran.html#ort_1928">空中写真（1928年頃）</a>'
+            });
+
+            map.addLayer({
+                id: 'ort_1928',
+                type: 'raster',
+                source: 'ort_1928',
+                minzoom: 14,
+                maxzoom: 23,
+            });
+
+            // 空中写真（1936年～1942年頃）
+            map.addSource('ort_riku10', {
+                type: 'raster',
+                tiles: ['https://cyberjapandata.gsi.go.jp/xyz/ort_riku10/{z}/{x}/{y}.png'],
+                tileSize: 256,
+                attribution: '<a href="https://maps.gsi.go.jp/development/ichiran.html#ort_riku10">空中写真（1936年～1942年頃）</a>'
+            });
+
+            map.addLayer({
+                id: 'ort_riku10',
+                type: 'raster',
+                source: 'ort_riku10',
+                minzoom: 14,
+                maxzoom: 23,
+            });
+
+            // 空中写真（1945年～1950年）
+            map.addSource('ort_USA10', {
+                type: 'raster',
+                tiles: ['https://cyberjapandata.gsi.go.jp/xyz/ort_USA10/{z}/{x}/{y}.png'],
+                tileSize: 256,
+                attribution: '<a href="https://maps.gsi.go.jp/development/ichiran.html#ort_USA10">空中写真（1945年～1950年）</a>'
+            });
+
+            map.addLayer({
+                id: 'ort_USA10',
+                type: 'raster',
+                source: 'ort_USA10',
+                minzoom: 14,
+                maxzoom: 23,
+            });
+
+            // 空中写真（1961年～1969年）
+            map.addSource('ort_old10', {
+                type: 'raster',
+                tiles: ['https://cyberjapandata.gsi.go.jp/xyz/ort_old10/{z}/{x}/{y}.png'],
+                tileSize: 256,
+                attribution: '<a href="https://maps.gsi.go.jp/development/ichiran.html#ort_old10">空中写真（1961年～1969年）</a>'
+            });
+
+            map.addLayer({
+                id: 'ort_old10',
+                type: 'raster',
+                source: 'ort_old10',
+                minzoom: 14,
+                maxzoom: 23,
+            });
+
+            // 空中写真（1974年～1978年）
+            map.addSource('gazo1', {
+                type: 'raster',
+                tiles: ['https://cyberjapandata.gsi.go.jp/xyz/gazo1/{z}/{x}/{y}.jpg'],
+                tileSize: 256,
+                attribution: '<a href="https://maps.gsi.go.jp/development/ichiran.html#gazo1">空中写真（1974年～1978年）</a>'
+            });
+
+            map.addLayer({
+                id: 'gazo1',
+                type: 'raster',
+                source: 'gazo1',
+                minzoom: 14,
+                maxzoom: 23,
+            });
+
+            // 空中写真（1979年～1983年）
+            map.addSource('gazo2', {
+                type: 'raster',
+                tiles: ['https://cyberjapandata.gsi.go.jp/xyz/gazo2/{z}/{x}/{y}.jpg'],
+                tileSize: 256,
+                attribution: '<a href="https://maps.gsi.go.jp/development/ichiran.html#gazo2">空中写真（1979年～1983年）</a>'
+            });
+
+            map.addLayer({
+                id: 'gazo2',
+                type: 'raster',
+                source: 'gazo2',
+                minzoom: 14,
+                maxzoom: 23,
+            });
+
+            // 空中写真（1984年～1986年）
+            map.addSource('gazo3', {
+                type: 'raster',
+                tiles: ['https://cyberjapandata.gsi.go.jp/xyz/gazo3/{z}/{x}/{y}.jpg'],
+                tileSize: 256,
+                attribution: '<a href="https://maps.gsi.go.jp/development/ichiran.html#gazo3">空中写真（1984年～1986年）</a>'
+            });
+
+            map.addLayer({
+                id: 'gazo3',
+                type: 'raster',
+                source: 'gazo3',
+                minzoom: 14,
+                maxzoom: 23,
+            });
+
+            // 空中写真（1987年～1990年）
+            map.addSource('gazo4', {
+                type: 'raster',
+                tiles: ['https://cyberjapandata.gsi.go.jp/xyz/gazo4/{z}/{x}/{y}.jpg'],
+                tileSize: 256,
+                attribution: '<a href="https://maps.gsi.go.jp/development/ichiran.html#gazo4">空中写真（1987年～1990年）</a>'
+            });
+
+            map.addLayer({
+                id: 'gazo4',
+                type: 'raster',
+                source: 'gazo4',
+                minzoom: 14,
+                maxzoom: 23,
+            });
+            */
+
+            // 全国最新写真（シームレス）
+            map.addSource('seamlessphoto', {
+                type: 'raster',
+                tiles: ['https://cyberjapandata.gsi.go.jp/xyz/seamlessphoto/{z}/{x}/{y}.jpg'],
+                tileSize: 256,
+                attribution: '<a href="https://maps.gsi.go.jp/development/ichiran.html#seamlessphoto">全国最新写真（シームレス）</a>'
+            });
+
+            map.addLayer({
+                id: 'seamlessphoto',
+                type: 'raster',
+                source: 'seamlessphoto',
+                minzoom: 14,
+                maxzoom: 23,
+            });
+
+            // レイヤ設定
+            let Map_AddLayer = {
+                'ort_1928': "0",
+                'ort_riku10': "1",
+                'ort_USA10': "2",
+                'ort_old10': "3",
+                'gazo1': "4",
+                'gazo2': "5",
+                'gazo3': "6",
+                'gazo4': "7",
+                'seamlessphoto': "8"
+            };
+
+            /*
+            // 初期表示（全国最新写真以外非表示）
+            for (let i = 0; i < Object.keys(Map_AddLayer).length; i++) {
+                let id = Object.keys(Map_AddLayer)[i];
+                if (id != 'seamlessphoto') {
+                    // レイヤを非表示
+                    map.setLayoutProperty(id, 'visibility', 'none');
+                    this.className = '';
+                } else {
+                    // レイヤを表示
+                    map.setLayoutProperty(id, 'visibility', 'visible');
+                    this.className = 'active';
+                }
+            }
+            */
+
+            /*
+            //　スライダーで空中写真のレイヤを制御
+            for (var i = 0; i < Object.keys(Map_AddLayer).length; i++) {
+                let id = Object.keys(Map_AddLayer)[i];
+                console.log(id)
+                console.log(Map_AddLayer[id])
+                document.getElementById('slider-year').addEventListener('input', function (e) {
+                    let year = parseInt(e.target.value);
+                    console.log(year)
+                    console.log(Map_AddLayer[id])
+                    if (year != Map_AddLayer[id]) {
+                        // レイヤを非表示
+                        map.setLayoutProperty(id, 'visibility', 'none');
+                        this.className = '';
+                    } else {
+                        // レイヤを表示
+                        map.setLayoutProperty(id, 'visibility', 'visible');
+                        this.className = 'active';
+                        if (id == 'ort_1928') {
+                            document.getElementById('slider-year-value').textContent = '1928年頃(大阪市)';
+                        } else if (id == 'ort_riku10') {
+                            document.getElementById('slider-year-value').textContent = '1936年～1942年頃(東京23区内・大阪市)';
+                        } else if (id == 'ort_USA10') {
+                            document.getElementById('slider-year-value').textContent = '1945年～1950年頃';
+                        } else if (id == 'ort_old10') {
+                            document.getElementById('slider-year-value').textContent = '1961年～1969年頃';
+                        } else if (id == 'gazo1') {
+                            document.getElementById('slider-year-value').textContent = '1974年～1978年頃';
+                        } else if (id == 'gazo2') {
+                            document.getElementById('slider-year-value').textContent = '1979年～1983年頃';
+                        } else if (id == 'gazo3') {
+                            document.getElementById('slider-year-value').textContent = '1984年～1986年頃';
+                        } else if (id == 'gazo4') {
+                            document.getElementById('slider-year-value').textContent = '1987年～1990年頃';
+                        } else if (id == 'seamlessphoto') {
+                            document.getElementById('slider-year-value').textContent = '全国最新写真';
+                        }
+                        // document.getElementById('slider-year-value').textContent = id.toString() + '年';
+                    }
+                });
+            };
+            */
+
+            // スライダーで空中写真レイヤの不透明度を制御
+            sliderOpactiy.addEventListener('input', (e) => {
+                /*
+                map.setPaintProperty(
+                    'ort_1928',
+                    'raster-opacity',
+                    parseInt(e.target.value, 10) / 100
+                );
+                map.setPaintProperty(
+                    'ort_riku10',
+                    'raster-opacity',
+                    parseInt(e.target.value, 10) / 100
+                );
+                map.setPaintProperty(
+                    'ort_USA10',
+                    'raster-opacity',
+                    parseInt(e.target.value, 10) / 100
+                );
+                map.setPaintProperty(
+                    'ort_old10',
+                    'raster-opacity',
+                    parseInt(e.target.value, 10) / 100
+                );
+                map.setPaintProperty(
+                    'gazo1',
+                    'raster-opacity',
+                    parseInt(e.target.value, 10) / 100
+                );
+                map.setPaintProperty(
+                    'gazo2',
+                    'raster-opacity',
+                    parseInt(e.target.value, 10) / 100
+                );
+                map.setPaintProperty(
+                    'gazo3',
+                    'raster-opacity',
+                    parseInt(e.target.value, 10) / 100
+                );
+                map.setPaintProperty(
+                    'gazo4',
+                    'raster-opacity',
+                    parseInt(e.target.value, 10) / 100
+                );
+                */
+                map.setPaintProperty(
+                    'seamlessphoto',
+                    'raster-opacity',
+                    parseInt(e.target.value, 10) / 100
+                );
+                sliderOpactiyValue.textContent = e.target.value + '%';
+            });
+
+            /*
+            // 法務省地図XMLベクトルタイル
+            map.addSource("pmtiles", {
+                type: "vector",
+                url: "pmtiles://" + PMTILES_URL,
+                attribution: '<a href="https://github.com/amx-project">法務省地図XMLアダプトプロジェクト ベクトルタイル</a>'
+            });
+            */
+
+            // 交通事故データベクトルタイル
+            map.addSource("pmtiles", {
+                type: "vector",
+                url: "pmtiles://" + PMTILES_URL,
+                attribution: '<a href="https://www.npa.go.jp/publications/statistics/koutsuu/opendata/index_opendata.html">交通事故統計情報のオープンデータ｜警察庁Webサイトを加工して作成</a>'
+            });
+
+            // ポイントレイヤ
+            map.addLayer({
+                "id": "jiko-1",
+                "source": "pmtiles",
+                "source-layer": "honhyo_20192021_utf8",
+                "type": "circle",
+                'paint': {
+                    'circle-color': 'rgba(255, 0, 0, 0.6)',
+                    'circle-blur': 0.8,
+                    'circle-radius': 8
+                }
+            });
+
+            // ポイントレイヤ
+            map.addLayer({
+                "id": "jiko-2",
+                "source": "pmtiles",
+                "source-layer": "honhyo_20192021_utf8",
+                "type": "circle",
+                'paint': {
+                    'circle-color': 'rgba(255, 229, 229, 1)',
+                    'circle-radius': 4
+                }
+            });
+
+            // const { MapboxLayer, MVTLayer } = deck;
+            /*
+            const mvtLayer = new MapboxLayer({
+                id: 'plateau-building-mvt',
+                type: MVTLayer,
+                data: `https://indigo-lab.github.io/plateau-lod2-mvt/{z}/{x}/{y}.pbf`,
+                minZoom: 0,
+                maxZoom: 23,
+                opacity: 0.3,
+                getFillColor: [255, 255, 255, 255],
+                lineWidthMinPixels: 1,
+                pickable: true,
+                extruded: true,
+                //押出をonにする
+                //autoHighlight: true,
+                //highlightColor: [255, 0, 0],
+                getElevation: d => d.properties.z,
+                //getElevation: d => d.properties.measuredHeight,
+                //getElevation: d => d.properties.bldg_measuredHeight,
+                wireframe: true,
+                //lineを有効にする
+                lineWidthMinPixels: 1,
+                getLineColor: [0, 0, 0],
+                material: {
+                    //立体ポリゴンのマテリアルを設定
+                    ambient: 0.1,
+                    diffuse: 0.9,
+                    shininess: 32,
+                    specularColor: [30, 30, 30]
+                }
+            });
+            map.addLayer(mvtLayer);
+            */
+
+            // map.showTileBoundaries = true;
+
+        })
+
+        map.on('click', 'jiko-1', (e) => {
+            lng = e.lngLat.lng;
+            lat = e.lngLat.lat;
+            new maplibregl.Popup()
+                .setLngLat(e.lngLat)
+                .setHTML('事故内容: ' + e.features[0].properties['事故内容'] +
+                    '<br>' + '死者数: ' + e.features[0].properties['死者数'] +
+                    '<br>' + '負傷者数: ' + e.features[0].properties['負傷者数'] +
+                    '<br>' + '路線コード: ' + e.features[0].properties['路線コード'] +
+                    '<br>' + '上下線: ' + e.features[0].properties['上下線'] +
+                    '<br>' + '発生日時: ' + e.features[0].properties['発生日時　　年']
+                    + '年' + e.features[0].properties['発生日時　　月'] + '月'
+                    + e.features[0].properties['発生日時　　日'] + '日'
+                    + e.features[0].properties['発生日時　　時'] + '時'
+                    + e.features[0].properties['発生日時　　分'] + '分' +
+                    '<br>' + '天候: ' + e.features[0].properties['天候'] +
+                    '<br>' + '路面状態: ' + e.features[0].properties['路面状態'] +
+                    '<br>' + '道路形状: ' + e.features[0].properties['道路形状'] +
+                    '<br>' + '事故類型: ' + e.features[0].properties['事故類型'] +
+                    '<br>' + '年齢（当事者A）: ' + e.features[0].properties['年齢（当事者A）'] +
+                    '<br>' + '年齢（当事者B）: ' + e.features[0].properties['大字名'] +
+                    '<br>' + '当事者種別（当事者A）: ' + e.features[0].properties['当事者種別（当事者A）'] +
+                    '<br>' + '当事者種別（当事者B）: ' + e.features[0].properties['当事者種別（当事者B）'] +
+                    '<br>' + '用途別（当事者A）: ' + e.features[0].properties['用途別（当事者A）'] +
+                    '<br>' + '用途別（当事者B）: ' + e.features[0].properties['用途別（当事者B）'] +
+                    '<br>' + '車両形状（当事者A）: ' + e.features[0].properties['用途車両形状（当事者A）'] +
+                    '<br>' + '車両形状（当事者A）: ' + e.features[0].properties['車両形状（当事者B）'] +
+                    '<br>' + '車両の衝突部位（当事者A）: ' + e.features[0].properties['車両の衝突部位（当事者A）'] +
+                    '<br>' + '車両の衝突部位（当事者B）: ' + e.features[0].properties['車両の衝突部位（当事者B）'] +
+                    '<br>' + '車両の損壊程度（当事者A）: ' + e.features[0].properties['車両の損壊程度（当事者A）'] +
+                    '<br>' + '車両の損壊程度（当事者B）: ' + e.features[0].properties['車両の損壊程度（当事者B）'] +
+                    '<br>' + '人身損傷程度（当事者A）: ' + e.features[0].properties['人身損傷程度（当事者A）'] +
+                    '<br>' + '人身損傷程度（当事者B）: ' + e.features[0].properties['人身損傷程度（当事者B）'] +
+                    '<br>' + '<a href=\https://www.google.com/maps?q=' + lat + "," + lng + "&hl=ja' target='_blank'>🌎Google Maps</a>" +
+                    '<br>' + '<a href=\https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=' + lat + "," + lng + "&hl=ja' target='_blank'>📷Street View</a>")
+                .addTo(map);
+        });
+
+        map.on('mouseenter', 'fude', () => {
+            map.getCanvas().style.cursor = 'pointer';
+        });
+
+        map.on('mouseleave', 'fude', () => {
+            map.getCanvas().style.cursor = '';
+        });
+    </script>
+</body>
+
+</html>
