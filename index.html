@@ -49,9 +49,15 @@
             cursor: ew-resize;
         }
 
-        .maplibregl-popup {
-            max-width: 800px;
-            font: 12px/12px 'Helvetica Neue', Arial, Helvetica, sans-serif;
+        .maplibregl-popup .maplibregl-popup-content {
+            padding: 8px 10px;
+            font: 12px/14px Arial, Helvetica, sans-serif;
+            color: black;
+            background: white;
+            background: rgba(255, 255, 255, 0.7);
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.4);
+            border-radius: 5px;
+            width: 350px;
         }
     </style>
 </head>
@@ -76,6 +82,7 @@
         let PMTILES_URL = "https://xs489works.xsrv.jp/MapLibreGLJS/11-01/honhyo_2019-2021_convert.pmtiles";
 
         const p = new pmtiles.PMTiles(PMTILES_URL)
+        p.getMetadata().then((res) => console.log(res));
 
         // this is so we share one instance across the JS code and the map renderer
         protocol.add(p);
@@ -250,7 +257,7 @@
                 "source-layer": "honhyo_20192021_convert",
                 "type": "circle",
                 'paint': {
-                    'circle-color': 'rgba(255, 0, 0, 0.6)',
+                    'circle-color': 'rgba(0, 0, 255, 0.6)',
                     'circle-blur': 0.8,
                     'circle-radius': 12
                 }
@@ -263,7 +270,7 @@
                 "source-layer": "honhyo_20192021_convert",
                 "type": "circle",
                 'paint': {
-                    'circle-color': 'rgba(255, 229, 229, 1)',
+                    'circle-color': 'rgba(229, 229, 255, 1)',
                     'circle-radius': 5
                 }
             });
@@ -281,7 +288,7 @@
             lat = e.lngLat.lat;
             new maplibregl.Popup()
                 .setLngLat(e.lngLat)
-                .setHTML('事故内容: ' + e.features[0].properties['事故内容'] +
+                .setHTML('<b>' + '<big>' + '<font color="red">' + '事故内容: ' + e.features[0].properties['事故内容'] + '</font>' + '</big>' + '</b>' +
                     '<br>' + '死者数: ' + parseInt(e.features[0].properties['死者数']) +
                     '<br>' + '負傷者数: ' + parseInt(e.features[0].properties['負傷者数']) +
                     '<br>' + '路線名: ' + e.features[0].properties['路線名'] +
@@ -340,7 +347,7 @@
             lat = e.lngLat.lat;
             new maplibregl.Popup()
                 .setLngLat(e.lngLat)
-                .setHTML('事故内容: ' + e.features[0].properties['事故内容'] +
+                .setHTML('<b>' + '<big>' + '<font color="blue">' + '事故内容: ' + e.features[0].properties['事故内容'] + '</font>' + '</big>' + '</b>' +
                     '<br>' + '死者数: ' + parseInt(e.features[0].properties['死者数']) +
                     '<br>' + '負傷者数: ' + parseInt(e.features[0].properties['負傷者数']) +
                     '<br>' + '路線名: ' + e.features[0].properties['路線名'] +
