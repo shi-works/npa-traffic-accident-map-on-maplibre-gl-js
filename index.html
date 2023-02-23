@@ -60,10 +60,9 @@
             background: rgba(255, 255, 255, 0.7);
             box-shadow: 0 0 15px rgba(0, 0, 0, 0.4);
             border-radius: 5px;
-            width: 250px;
-            height: 300px;
+            width: 320px;
+            height: 320px;
             overflow: scroll;
-            -webkit-overflow-scrolling: touch;
         }
 
         th,
@@ -73,6 +72,9 @@
         }
 
         table {
+            font-size: 9pt;
+            /*table-layout: fixed;*/
+            /*width: 340px;*/
             border-collapse: collapse;
             /* セルの線を重ねる */
         }
@@ -420,9 +422,9 @@
                     */
 
                     // 表形式
-                    + '<table ' + 'style="font-size: 9pt; "' + '>' +
+                    + '<table>' +
                     '<tr>' +
-                    '<th>' + '項目' + '</th> ' + '<th>' + '当事者A' + '</th> ' + '<th>' + '当事者B' + '</th>' +
+                    '<th width="140">' + '項目' + '</th> ' + '<th width="100">' + '当事者A' + '</th> ' + '<th width="100">' + '当事者B' + '</th>' +
                     '</tr>' +
                     '<tr>' +
                     '<td>' + '年齢層' + '</td> ' + '<td>' + nenrei_a + '</td> ' + '<td>' + nenrei_b + '</td>' +
@@ -455,14 +457,14 @@
                     '<td>' + '一時停止規制_表示' + '</td> ' + '<td>' + ichijiteishikisei_hyoji_a + '</td> ' + '<td>' + ichijiteishikisei_hyoji_b + '</td>' +
                     '</tr>' +
                     '<tr>' +
-                    '<td>' + 'エアバッグの装備' + '</td> ' + '<td>' + eabaggunosobi_a + '</td> ' + '<td>' + eabaggunosobi_b + '</td>' +
+                    '<td>' + 'ｴｱﾊﾞｯｸﾞの装備' + '</td> ' + '<td>' + eabaggunosobi_a + '</td> ' + '<td>' + eabaggunosobi_b + '</td>' +
                     '</tr>' +
                     '<tr>' +
-                    '<td>' + 'サイドエアバッグの装備' + '</td> ' + '<td>' + saidoeabaggunosobi_a + '</td> ' + '<td>' + saidoeabaggunosobi_b + '</td>' +
+                    '<td>' + 'ｻｲﾄﾞｴｱﾊﾞｯｸﾞの装備' + '</td> ' + '<td>' + saidoeabaggunosobi_a + '</td> ' + '<td>' + saidoeabaggunosobi_b + '</td>' +
                     '</tr>' +
                     '<table>'
                     + '座標: ' + lat.toFixed(7) + "," + lng.toFixed(7) + ' ※クリック位置の座標<br>'
-                    + '<a href=\https://www.google.com/maps?q=' + lat + "," + lng + "&hl=ja' target='_blank'>🌎Google Maps</a>" + '<br>'
+                    + '<a href=\https://www.google.com/maps?q=' + lat + "," + lng + "&hl=ja' target='_blank'>🌎Google Maps</a>" + ' '
                     + '<a href=\https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=' + lat + "," + lng + "&hl=ja' target='_blank'>📷Street View</a>")
                 .addTo(map);
         });
@@ -576,9 +578,9 @@
                     */
 
                     // 表形式
-                    + '<table ' + 'style="font-size: 9pt; "' + '>' +
+                    + '<table ' + 'style="font-size: 9pt; table-layout: fixed;"' + '>' +
                     '<tr>' +
-                    '<th>' + '項目' + '</th> ' + '<th>' + '当事者A' + '</th> ' + '<th>' + '当事者B' + '</th>' +
+                    '<th width="140">' + '項目' + '</th> ' + '<th width="100">' + '当事者A' + '</th> ' + '<th width="100">' + '当事者B' + '</th>' +
                     '</tr>' +
                     '<tr>' +
                     '<td>' + '年齢層' + '</td> ' + '<td>' + nenrei_a + '</td> ' + '<td>' + nenrei_b + '</td>' +
@@ -611,14 +613,14 @@
                     '<td>' + '一時停止規制_表示' + '</td> ' + '<td>' + ichijiteishikisei_hyoji_a + '</td> ' + '<td>' + ichijiteishikisei_hyoji_b + '</td>' +
                     '</tr>' +
                     '<tr>' +
-                    '<td>' + 'エアバッグの装備' + '</td> ' + '<td>' + eabaggunosobi_a + '</td> ' + '<td>' + eabaggunosobi_b + '</td>' +
+                    '<td>' + 'ｴｱﾊﾞｯｸﾞの装備' + '</td> ' + '<td>' + eabaggunosobi_a + '</td> ' + '<td>' + eabaggunosobi_b + '</td>' +
                     '</tr>' +
                     '<tr>' +
-                    '<td>' + 'サイドエアバッグの装備' + '</td> ' + '<td>' + saidoeabaggunosobi_a + '</td> ' + '<td>' + saidoeabaggunosobi_b + '</td>' +
+                    '<td>' + 'ｻｲﾄﾞｴｱﾊﾞｯｸﾞの装備' + '</td> ' + '<td>' + saidoeabaggunosobi_a + '</td> ' + '<td>' + saidoeabaggunosobi_b + '</td>' +
                     '</tr>' +
                     '<table>'
                     + '座標: ' + lat.toFixed(7) + "," + lng.toFixed(7) + ' ※クリック位置の座標<br>'
-                    + '<a href=\https://www.google.com/maps?q=' + lat + "," + lng + "&hl=ja' target='_blank'>🌎Google Maps</a>" + '<br>'
+                    + '<a href=\https://www.google.com/maps?q=' + lat + "," + lng + "&hl=ja' target='_blank'>🌎Google Maps</a>" + ' '
                     + '<a href=\https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=' + lat + "," + lng + "&hl=ja' target='_blank'>📷Street View</a>")
                 .addTo(map);
         });
