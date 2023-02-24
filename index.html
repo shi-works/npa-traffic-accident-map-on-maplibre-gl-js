@@ -135,7 +135,8 @@
         maplibregl.addProtocol("pmtiles", protocol.tile);
 
         // let PMTILES_URL = "https://shi-works.github.io/traffic-accident-map/honhyo_2019-2021_convert.pmtiles";
-        let PMTILES_URL = "https://xs489works.xsrv.jp/MapLibreGLJS/11-01/honhyo_2019-2021_convert.pmtiles";
+        // let PMTILES_URL = "https://xs489works.xsrv.jp/MapLibreGLJS/11-01/honhyo_2019-2021_convert.pmtiles";
+        let PMTILES_URL = "https://xs489works.xsrv.jp/MapLibreGLJS/11-01/honhyo_2019-2021_convert_v2.pmtiles";
 
         const p = new pmtiles.PMTiles(PMTILES_URL)
         p.getMetadata().then((res) => console.log(res));
@@ -291,7 +292,8 @@
             map.addLayer({
                 "id": "shiboujiko-1",
                 "source": "pmtiles",
-                "source-layer": "honhyo_20192021_convert",
+                //"source-layer": "honhyo_20192021_convert",
+                "source-layer": "honhyo_20192021_convert_v2",
                 "type": "circle",
                 'paint': {
                     'circle-color': 'rgba(203, 0, 0, 1)',
@@ -304,7 +306,8 @@
             map.addLayer({
                 "id": "shiboujiko-2",
                 "source": "pmtiles",
-                "source-layer": "honhyo_20192021_convert",
+                //"source-layer": "honhyo_20192021_convert",
+                "source-layer": "honhyo_20192021_convert_v2",
                 "type": "circle",
                 'paint': {
                     'circle-color': 'rgba(255, 0, 0, 1)',
@@ -321,7 +324,8 @@
             map.addLayer({
                 "id": "fushoujiko-1",
                 "source": "pmtiles",
-                "source-layer": "honhyo_20192021_convert",
+                //"source-layer": "honhyo_20192021_convert",
+                "source-layer": "honhyo_20192021_convert_v2",
                 "type": "circle",
                 'paint': {
                     'circle-color': 'rgba(0, 0, 255, 0.6)',
@@ -334,7 +338,8 @@
             map.addLayer({
                 "id": "fushoujiko-2",
                 "source": "pmtiles",
-                "source-layer": "honhyo_20192021_convert",
+                //"source-layer": "honhyo_20192021_convert",
+                "source-layer": "honhyo_20192021_convert_v2",
                 "type": "circle",
                 'paint': {
                     'circle-color': 'rgba(229, 229, 255, 1)',
