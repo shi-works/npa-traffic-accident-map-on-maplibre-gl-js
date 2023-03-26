@@ -1,16 +1,12 @@
 # 交通事故マップ on MapLibre GL JS
-Public Website
-https://shi-works.github.io/traffic-accident-map/
+## Public Website
+- https://shi-works.github.io/traffic-accident-map/
+## サンプル画像
 
 # traffic-accident-pmtiles
 ## データについて
-- 本データは、[政府統計窓口（e-stat）](https://www.e-stat.go.jp/)にて公開されている、[2020年国勢調査小地域（町丁・字等別及び基本単位区）の境界データ（JGD2011）](https://www.e-stat.go.jp/gis/statmap-search?page=1&type=2&aggregateUnitForBoundary=A&toukeiCode=00200521)を[tippecanoe](https://github.com/felt/tippecanoe)で[PMTiles形式](https://github.com/protomaps/PMTiles)に変換したデータになります。
+- 本データは、警察庁が公開している、[交通事故統計情報のオープンデータ](https://www.npa.go.jp/publications/statistics/koutsuu/opendata/index_opendata.html)を[tippecanoe](https://github.com/felt/tippecanoe)で[PMTiles形式](https://github.com/protomaps/PMTiles)に変換したデータになります。
 - オープンソースソフトウェアで構築
-
-## デモサイト
-- https://shi-works.github.io/2020Kokusei_PMTiles/
-- サンプル画像
-![image](https://user-images.githubusercontent.com/71203808/227753143-b5050ccb-3e4d-4b29-8778-5fe4ba2fc3d0.png)
 
 ## データ配布
 ### 町丁・字等別
