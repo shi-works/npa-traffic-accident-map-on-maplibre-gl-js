@@ -136,7 +136,7 @@
 
         // let PMTILES_URL = "https://shi-works.github.io/traffic-accident-map/honhyo_2019-2021_convert.pmtiles";
         // let PMTILES_URL = "https://xs489works.xsrv.jp/MapLibreGLJS/11-01/honhyo_2019-2021_convert.pmtiles";
-        let PMTILES_URL = "https://xs489works.xsrv.jp/MapLibreGLJS/11-01/honhyo_2019-2021_convert_v2.pmtiles";
+        let PMTILES_URL = "https://pmtiles-data.s3.ap-northeast-1.amazonaws.com/traffic-accident/honhyo_2019-2021_convert_v2.pmtiles";
 
         const p = new pmtiles.PMTiles(PMTILES_URL)
         p.getMetadata().then((res) => console.log(res));
