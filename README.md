@@ -6,20 +6,23 @@
 
 # traffic-accident-pmtiles
 ## データについて
-- 本データは、警察庁が公開している、[交通事故統計情報のオープンデータ（2019年、2020年、2021年）](https://www.npa.go.jp/publications/statistics/koutsuu/opendata/index_opendata.html)を[tippecanoe](https://github.com/felt/tippecanoe)で[PMTiles形式](https://github.com/protomaps/PMTiles)に変換したデータになります。
+- 本データは、警察庁が公開している、[交通事故統計情報のオープンデータ（2019年、2020年、2021年）の本票](https://www.npa.go.jp/publications/statistics/koutsuu/opendata/index_opendata.html)を[tippecanoe](https://github.com/felt/tippecanoe)で[PMTiles形式](https://github.com/protomaps/PMTiles)に変換したデータになります。
 - オープンソースソフトウェアで構築
 
 ## データ配布
 - `https://pmtiles-data.s3.ap-northeast-1.amazonaws.com/traffic-accident/honhyo_2019-2021_convert_v2.pmtiles`(171.5MB)
 
 ## ベクトルタイル設計情報
-### ■ 町丁・字等別
-#### 境界データ（r2ka01-47_JGD2011.pmtiles）
-- 境界データそのものを可能な限り生かしたデータです。
-- tippecanoeによるデータの間引きを行っていません。
+- 本票そのものを可能な限り生かしたデータです。
+- tippecanoeによるデータの間引き（自動）を行っております。
 
 ### ズームレベル範囲
 - 0-14
 
 ### 属性
-- 境界データの属性はそのまま生かしています。
+- 本票の属性はそのまま生かしています。
+- ただし、属性については、コード表をもとに読みやすい形式に変換しています。
+- 
+## PMTiles Viewer
+- PMTilesはPMTiles Viewerで閲覧することができます。
+- https://protomaps.github.io/PMTiles/
