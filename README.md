@@ -22,7 +22,7 @@
 ### 属性
 - 本票の属性はそのまま生かしています。
 - ただし、属性については、コード表をもとに読みやすい形式に変換しています。
-- 
+
 ## PMTiles Viewer
 - PMTilesはPMTiles Viewerで閲覧することができます。
 - https://protomaps.github.io/PMTiles/
