@@ -27,3 +27,6 @@
 ## PMTiles Viewer
 - PMTilesはPMTiles Viewerで閲覧することができます。
 - https://protomaps.github.io/PMTiles/
+
+## ライセンス
+本データセットは[CC-BY-4.0](https://github.com/shi-works/2020Kokusei_PMTiles/blob/main/LICENSE)で提供されます。使用の際には本レポジトリへのリンクを提示してください。
