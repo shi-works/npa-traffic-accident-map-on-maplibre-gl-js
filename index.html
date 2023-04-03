@@ -25,7 +25,7 @@
             font: bold 12px/20px 'Helvetica Neue', Arial, Helvetica, sans-serif;
             position: absolute;
             width: 240px;
-            bottom: 30px;
+            bottom: 20px;
             left: 0;
             padding: 10px;
         }
@@ -57,12 +57,27 @@
             font: 12px/14px Arial, Helvetica, sans-serif;
             color: black;
             background: white;
-            background: rgba(255, 255, 255, 0.7);
+            background: rgba(255, 255, 255, 0.9);
             box-shadow: 0 0 15px rgba(0, 0, 0, 0.4);
             border-radius: 5px;
             width: 320px;
             height: 320px;
             overflow: scroll;
+        }
+
+        #select-pmtiles {
+            padding: 3px 4px;
+            font: 12px/14px Arial, Helvetica, sans-serif;
+            color: black;
+            background: white;
+            background: rgba(255, 255, 255, 1.0);
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+            border-radius: 5px;
+            width: fit-content;
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            z-index: 10;
         }
 
         th,
@@ -90,7 +105,7 @@
             right: 10px;
             z-index: 1;
             line-height: 25px;
-            height: 80px;
+            height: 120px;
         }
 
         .legend h4 {
@@ -105,19 +120,71 @@
             width: 15px;
             color: orangered
         }
+
+        .circle {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .square {
+            width: 10px;
+            height: 10px;
+            /*border-radius: 4px;*/
+        }
+
+        /*
+        #button {
+            position: absolute;
+            bottom: 100px;
+            left: 10px;
+            z-index: 1;
+            font-size: 10px;
+        }
+        */
     </style>
 </head>
 
 <body>
     <div id="map"></div>
+    <!--
+    <div id="button">
+        <button type="button" id="b_toujisya">当事者<br>(歩行者及び軽車両)</button>
+    </div>
+    -->
     <div id='county-legend' class='legend'>
-        <h4>事故内容</h4>
+        <!--<h4>事故内容</h4>-->
+        <!--
         <div><span
                 style='background-color: rgb(255, 0, 0);outline: 2px solid;outline-color: rgb(203, 0, 0);'></span>死亡事故
         </div>
+        -->
+        <div class="circle"
+            style='background-color: rgb(255, 0, 0);outline: 1px solid;outline-color: rgb(203, 0, 0); display: inline-block;'>
+        </div>
+        <span style="display: inline-block; margin-left: 5px;">死亡事故</span><br>
+        <!--
         <div><span
                 style='background-color: rgb(229, 229, 255);outline: 2px solid;outline-color: rgb(0, 0, 255, 0.6);'></span>負傷事故
         </div>
+        -->
+        <div class="circle"
+            style='background-color: rgb(229, 229, 255);outline: 1px solid;outline-color: rgb(0, 0, 255); display: inline-block;'>
+        </div>
+        <span style="display: inline-block; margin-left: 5px;">負傷事故</span><br>
+        <!--
+        <div><span
+                style='background-color: rgb(216, 255, 204);outline: 2px solid;outline-color: rgb(38, 152, 0, 0.6);'></span>小学校
+        </div>
+        -->
+        <div class="circle"
+            style='background-color: rgb(216, 255, 204);outline: 1px solid;outline-color: rgb(38, 152, 0); display: inline-block;'>
+        </div>
+        <span style="display: inline-block; margin-left: 5px;">小学校</span><br>
+        <div class="square"
+            style='background-color: rgb(213, 241, 228); outline: 1px solid;outline-color: rgb(45, 186, 118); display: inline-block;'>
+        </div>
+        <span style="margin-left: 5px;">ゾーン30及び<br>最高速度区域30km/h</span>
     </div>
     <div class="map-overlay top">
         <div class="map-overlay-inner">
@@ -148,11 +215,11 @@
             container: 'map',
             style: './std.json',
             // style: 'https://gsi-cyberjapan.github.io/gsivectortile-mapbox-gl-js/std.json',
-            zoom: 18,
+            zoom: 15,
             maxZoom: 23,
             minZoom: 4,
-            center: [139.731498, 35.801704],
-            maplibreLogo: true,
+            center: [139.487748, 35.922752],
+            // maplibreLogo: true,
             hash: true,
             // 既存Attributionを非表示
             attributionControl: false
@@ -280,6 +347,100 @@
                     parseInt(e.target.value, 10) / 100
                 );
                 sliderOpactiyValue.textContent = e.target.value + '%';
+            });
+
+            // ゾーン30
+            map.addSource('kisei_99_47', {
+                'type': 'geojson',
+                'data': './202303011801_typeD_kisei_99_47_polygon.geojson',
+                attribution: '<a href="https://www.jartic.or.jp/">日本道路交通情報センター(JARTIC)オープンデータ「交通規制情報」を加工して作成</a>'
+            });
+
+            // ゾーン30ポリゴンレイヤ
+            map.addLayer({
+                'id': 'kisei_99_47_fill',
+                'type': 'fill',
+                'source': 'kisei_99_47',
+                minzoom: 13,
+                maxzoom: 23,
+                'layout': {
+                },
+                'paint': {
+                    'fill-color': 'rgba(45, 186, 118, 1)',
+                    'fill-opacity': 0.2
+                }
+            });
+
+            // ゾーン30ラインレイヤ
+            map.addLayer({
+                'id': 'kisei_99_47_line',
+                'type': 'line',
+                'source': 'kisei_99_47',
+                minzoom: 13,
+                maxzoom: 23,
+                'layout': {
+                    'line-join': 'round',
+                    'line-cap': 'round'
+                },
+                'paint': {
+                    'line-color': 'rgba(45, 186, 118, 1)',
+                    'line-opacity': 1
+                }
+            });
+
+            // 小学校
+            map.addSource('primary-school', {
+                'type': 'geojson',
+                'data': './P29-21_primary school.geojson',
+                attribution: '<a href="https://nlftp.mlit.go.jp/">国土数値情報 学校データを加工して作成</a>'
+            });
+
+            // 小学校ポイントレイヤ
+            map.addLayer({
+                "id": "primary-school-1",
+                "source": "primary-school",
+                "type": "circle",
+                minzoom: 13,
+                maxzoom: 23,
+                'paint': {
+                    'circle-color': 'rgba(38, 152, 0, 1)',
+                    'circle-blur': 0.8,
+                    'circle-radius': 12
+                }
+            });
+
+            // 小学校ポイントレイヤ
+            map.addLayer({
+                "id": "primary-school-2",
+                "source": "primary-school",
+                "type": "circle",
+                minzoom: 13,
+                maxzoom: 23,
+                'paint': {
+                    'circle-color': 'rgba(216, 255, 204, 1)',
+                    'circle-radius': 6
+                }
+            });
+
+            // 小学校ラベルレイヤ
+            map.addLayer({
+                id: 'primary-school-label',
+                type: 'symbol',
+                source: 'primary-school',
+                minzoom: 13,
+                maxzoom: 23,
+                layout: {
+                    'text-field': ['get', 'P29_004'],
+                    'text-font': ['Open Sans Semibold', 'Arial Unicode MS Bold'],
+                    'text-size': 12,
+                    'text-offset': [0, -1.2]
+                },
+                paint: {
+                    'text-color': 'rgba(0,　152,　0, 1)',
+                    'text-halo-blur': 1,
+                    'text-halo-color': 'rgba(255, 255, 255, 1)',
+                    'text-halo-width': 1.5
+                }
             });
 
             // 交通事故データベクトルタイル（PMTiles）
@@ -665,14 +826,6 @@
                     + '<a href=\https://www.google.com/maps?q=' + lat + "," + lng + "&hl=ja' target='_blank'>🌎Google Maps</a>" + ' '
                     + '<a href=\https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=' + lat + "," + lng + "&hl=ja' target='_blank'>📷Street View</a>")
                 .addTo(map);
-        });
-
-        map.on('mouseenter', 'fude', () => {
-            map.getCanvas().style.cursor = 'pointer';
-        });
-
-        map.on('mouseleave', 'fude', () => {
-            map.getCanvas().style.cursor = '';
         });
     </script>
 </body>
