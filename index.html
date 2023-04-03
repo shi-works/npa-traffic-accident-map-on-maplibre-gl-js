@@ -249,7 +249,8 @@
 
         // Attributionを折りたたみ表示
         map.addControl(new maplibregl.AttributionControl({
-            compact: true
+            compact: true,
+            customAttribution: '（<a href="https://twitter.com/syanseto" target="_blank">Twitter</a> | <a href="https://github.com/shi-works/traffic-accident-map" target="_blank">Github</a>） '
         }));
 
         // ジオコーダー追加
