@@ -80,6 +80,18 @@
             z-index: 10;
         }
 
+        #info {
+            position: absolute;
+            padding: 10px;
+            font-size: 12px;
+            text-align: center;
+            color: #222;
+            background: #FFFFFF;
+            bottom: 90px;
+            left: 10px;
+            z-index: 1;
+        }
+
         th,
         td {
             border: solid 1px;
@@ -147,6 +159,7 @@
 
 <body>
     <div id="map"></div>
+    <pre id="info"></pre>
     <!--
     <div id="button">
         <button type="button" id="b_toujisya">当事者<br>(歩行者及び軽車両)</button>
@@ -514,6 +527,12 @@
             map.setFilter('fushoujiko-1', ['==', '事故内容', '負傷事故']);
             map.setFilter('fushoujiko-2', ['==', '事故内容', '負傷事故']);
             map.showTileBoundaries = false;
+
+            // マウスポインタの座標（フルスクリーンモードで消えるバグあり、スマホで表示されない）
+            map.on('mousemove', (e) => {
+                document.getElementById('info').innerHTML =
+                    JSON.stringify('緯度=' + e.lngLat.lat.toFixed(5) + ', 経度=' + e.lngLat.lng.toFixed(5));
+            });
 
         })
 
