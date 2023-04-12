@@ -4,11 +4,15 @@
     <title>警察庁 交通事故マップ（PMTiles）</title>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!--maplibre-gl-->
     <script src="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.js"></script>
     <link href="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.css" rel="stylesheet" />
+    <!--maplibre-gl-export-->
+    <!--
     <link href='https://watergis.github.io/maplibre-gl-export/maplibre-gl-export.css' rel='stylesheet' />
     <script src='https://unpkg.com/maplibre-gl@1.15.2/dist/maplibre-gl.js'></script>
     <script src="https://watergis.github.io/maplibre-gl-export/maplibre-gl-export.js"></script>
+    -->
     <script src="https://unpkg.com/pmtiles@2.7.0/dist/index.js"></script>
     <!--<script src="https://unpkg.com/deck.gl@^8.8.0/dist.min.js"></script>-->
     <style>
@@ -313,6 +317,7 @@
                 maplibregl: maplibregl
             }), 'top-left');
 
+        /*
         // maplibre-gl-export
         map.addControl(new MaplibreExportControl({
             PageSize: Size.A4,
@@ -323,6 +328,7 @@
             PrintableArea: true,
             Local: 'en'
         }), 'top-right');
+        */
 
         const sliderOpactiy = document.getElementById('slider-opacity');
         const sliderOpactiyValue = document.getElementById('slider-opacity-value');
