@@ -11,6 +11,8 @@
 
 ## 小学校
 - 国土数値情報の学校データを加工して作成
+- https://nlftp.mlit.go.jp/ksj/gml/datalist/KsjTmplt-P29-v2_0.html
 
 ## ゾーン30
 - 日本道路交通情報センター(JARTIC)オープンデータ「交通規制情報」を加工して作成
+- https://www.jartic.or.jp/
