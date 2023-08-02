@@ -6,7 +6,7 @@
 ![image](https://github.com/shi-works/traffic-accident-map/assets/71203808/d731b513-f65a-4b25-b57b-91889b3790e6)
 
 ## 交通事故データ
-- 警察庁の交通事故統計情報のオープンデータ（2019年、2020年、2021年）の本票を加工して作成
+- 警察庁の交通事故統計情報のオープンデータ（2019年、2020年、2021年、2022年）の本票を加工して作成
 - https://github.com/shi-works/traffic-accident-pmtiles
 
 ## 小学校
