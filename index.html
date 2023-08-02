@@ -220,7 +220,8 @@
 
         // let PMTILES_URL = "https://shi-works.github.io/traffic-accident-map/honhyo_2019-2021_convert.pmtiles";
         // let PMTILES_URL = "https://xs489works.xsrv.jp/MapLibreGLJS/11-01/honhyo_2019-2021_convert.pmtiles";
-        let PMTILES_JIKO_URL = "https://xs489works.xsrv.jp/pmtiles-data/traffic-accident/honhyo_2019-2021_convert_v2.pmtiles";
+        // let PMTILES_JIKO_URL = "https://xs489works.xsrv.jp/pmtiles-data/traffic-accident/honhyo_2019-2021_convert_v2.pmtiles";
+        let PMTILES_JIKO_URL = "https://xs489works.xsrv.jp/pmtiles-data/traffic-accident/honhyo_2019-2022_convert.pmtiles";
         let PMTILES_SCHOOL_URL = "https://xs489works.xsrv.jp/pmtiles-data/traffic-accident/P29-21_primary_school.pmtiles"
         let PMTILES_KISEI_URL = "https://xs489works.xsrv.jp/pmtiles-data/traffic-accident/202303011801_typeD_kisei_99_47_polygon.pmtiles"
 
@@ -505,8 +506,9 @@
             map.addLayer({
                 "id": "shiboujiko-1",
                 "source": "pmtiles-jiko",
-                //"source-layer": "honhyo_20192021_convert",
-                "source-layer": "honhyo_20192021_convert_v2fgb",
+                // "source-layer": "honhyo_20192021_convert",
+                // "source-layer": "honhyo_20192021_convert_v2fgb",
+                "source-layer": "honhyo_20192022_convertfgb",
                 "type": "circle",
                 'paint': {
                     'circle-color': 'rgba(203, 0, 0, 1)',
@@ -520,7 +522,8 @@
                 "id": "shiboujiko-2",
                 "source": "pmtiles-jiko",
                 //"source-layer": "honhyo_20192021_convert",
-                "source-layer": "honhyo_20192021_convert_v2fgb",
+                // "source-layer": "honhyo_20192021_convert_v2fgb",
+                "source-layer": "honhyo_20192022_convertfgb",
                 "type": "circle",
                 'paint': {
                     'circle-color': 'rgba(255, 0, 0, 1)',
@@ -538,7 +541,8 @@
                 "id": "fushoujiko-1",
                 "source": "pmtiles-jiko",
                 //"source-layer": "honhyo_20192021_convert",
-                "source-layer": "honhyo_20192021_convert_v2fgb",
+                // "source-layer": "honhyo_20192021_convert_v2fgb",
+                "source-layer": "honhyo_20192022_convertfgb",
                 "type": "circle",
                 'paint': {
                     'circle-color': 'rgba(0, 0, 255, 0.6)',
@@ -552,7 +556,8 @@
                 "id": "fushoujiko-2",
                 "source": "pmtiles-jiko",
                 //"source-layer": "honhyo_20192021_convert",
-                "source-layer": "honhyo_20192021_convert_v2fgb",
+                // "source-layer": "honhyo_20192021_convert_v2fgb",
+                "source-layer": "honhyo_20192022_convertfgb",
                 "type": "circle",
                 'paint': {
                     'circle-color': 'rgba(229, 229, 255, 1)',
@@ -575,8 +580,10 @@
 
         // 死亡事故ポップアップ表示
         map.on('click', 'shiboujiko-1', (e) => {
-            var lng = e.lngLat.lng;
-            var lat = e.lngLat.lat;
+            // var lng = e.lngLat.lng;
+            // var lat = e.lngLat.lat;
+            var lng = e.features[0].geometry.coordinates[0];
+            var lat = e.features[0].geometry.coordinates[1];
 
             var jikonaiyo = e.features[0].properties['事故内容'];
             var shishasu = parseInt(e.features[0].properties['死者数']);
@@ -731,8 +738,10 @@
 
         // 負傷事故ポップアップ表示
         map.on('click', 'fushoujiko-1', (e) => {
-            lng = e.lngLat.lng;
-            lat = e.lngLat.lat;
+            // lng = e.lngLat.lng;
+            // lat = e.lngLat.lat;
+            var lng = e.features[0].geometry.coordinates[0];
+            var lat = e.features[0].geometry.coordinates[1];
 
             var jikonaiyo = e.features[0].properties['事故内容'];
             var shishasu = parseInt(e.features[0].properties['死者数']);
