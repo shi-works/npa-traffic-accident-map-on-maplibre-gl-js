@@ -1,6 +1,6 @@
 # 交通事故マップ on MapLibre GL JS
 ## Public Website
-- https://shi-works.github.io/traffic-accident-map/
+- https://shi-works.github.io/npa-traffic-accident-map/
 
 ## サンプル画像
 ![image](https://github.com/shi-works/traffic-accident-map/assets/71203808/d731b513-f65a-4b25-b57b-91889b3790e6)
