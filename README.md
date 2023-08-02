@@ -1,4 +1,4 @@
-# 交通事故マップ on MapLibre GL JS
+# 警察庁 交通事故マップ on MapLibre GL JS
 ## Public Website
 - https://shi-works.github.io/npa-traffic-accident-map/
 
