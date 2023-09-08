@@ -3,7 +3,7 @@
 - https://shi-works.github.io/npa-traffic-accident-map/
 
 ## サンプル画像
-![image](https://github.com/shi-works/npa-traffic-accident-map/assets/71203808/b4ce2cef-90fe-4c3e-a81c-2f0f207477f8)
+![image](https://github.com/shi-works/npa-traffic-accident-map/assets/71203808/4e572ae2-0157-4e97-809f-5ed80f5cc40b)
 
 ## 交通事故データ
 - 警察庁の交通事故統計情報のオープンデータ（2019年、2020年、2021年、2022年）の本票を加工して作成
