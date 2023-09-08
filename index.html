@@ -4,17 +4,9 @@
     <title>警察庁 交通事故マップ（PMTiles）</title>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!--maplibre-gl-->
     <script src="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.js"></script>
     <link href="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.css" rel="stylesheet" />
-    <!--maplibre-gl-export-->
-    <!--
-    <link href='https://watergis.github.io/maplibre-gl-export/maplibre-gl-export.css' rel='stylesheet' />
-    <script src='https://unpkg.com/maplibre-gl@1.15.2/dist/maplibre-gl.js'></script>
-    <script src="https://watergis.github.io/maplibre-gl-export/maplibre-gl-export.js"></script>
-    -->
     <script src="https://unpkg.com/pmtiles@2.7.0/dist/index.js"></script>
-    <!--<script src="https://unpkg.com/deck.gl@^8.8.0/dist.min.js"></script>-->
     <style>
         body {
             margin: 0;
@@ -148,52 +140,21 @@
             height: 10px;
             /*border-radius: 4px;*/
         }
-
-        /*
-        #button {
-            position: absolute;
-            bottom: 100px;
-            left: 10px;
-            z-index: 1;
-            font-size: 10px;
-        }
-        */
     </style>
 </head>
 
 <body>
     <div id="map"></div>
     <pre id="info"></pre>
-    <!--
-    <div id="button">
-        <button type="button" id="b_toujisya">当事者<br>(歩行者及び軽車両)</button>
-    </div>
-    -->
     <div id='county-legend' class='legend'>
-        <!--<h4>事故内容</h4>-->
-        <!--
-        <div><span
-                style='background-color: rgb(255, 0, 0);outline: 2px solid;outline-color: rgb(203, 0, 0);'></span>死亡事故
-        </div>
-        -->
         <div class="circle"
             style='background-color: rgb(255, 0, 0);outline: 1px solid;outline-color: rgb(203, 0, 0); display: inline-block;'>
         </div>
         <span style="display: inline-block; margin-left: 5px;">死亡事故</span><br>
-        <!--
-        <div><span
-                style='background-color: rgb(229, 229, 255);outline: 2px solid;outline-color: rgb(0, 0, 255, 0.6);'></span>負傷事故
-        </div>
-        -->
         <div class="circle"
             style='background-color: rgb(229, 229, 255);outline: 1px solid;outline-color: rgb(0, 0, 255); display: inline-block;'>
         </div>
         <span style="display: inline-block; margin-left: 5px;">負傷事故</span><br>
-        <!--
-        <div><span
-                style='background-color: rgb(216, 255, 204);outline: 2px solid;outline-color: rgb(38, 152, 0, 0.6);'></span>小学校
-        </div>
-        -->
         <div class="circle"
             style='background-color: rgb(216, 255, 204);outline: 1px solid;outline-color: rgb(38, 152, 0); display: inline-block;'>
         </div>
@@ -218,9 +179,6 @@
         let protocol = new pmtiles.Protocol();
         maplibregl.addProtocol("pmtiles", protocol.tile);
 
-        // let PMTILES_URL = "https://shi-works.github.io/traffic-accident-map/honhyo_2019-2021_convert.pmtiles";
-        // let PMTILES_URL = "https://xs489works.xsrv.jp/MapLibreGLJS/11-01/honhyo_2019-2021_convert.pmtiles";
-        // let PMTILES_JIKO_URL = "https://xs489works.xsrv.jp/pmtiles-data/traffic-accident/honhyo_2019-2021_convert_v2.pmtiles";
         let PMTILES_JIKO_URL = "https://xs489works.xsrv.jp/pmtiles-data/traffic-accident/honhyo_2019-2022_convert.pmtiles";
         let PMTILES_SCHOOL_URL = "https://xs489works.xsrv.jp/pmtiles-data/traffic-accident/P29-21_primary_school.pmtiles"
         let PMTILES_KISEI_URL = "https://xs489works.xsrv.jp/pmtiles-data/traffic-accident/202303011801_typeD_kisei_99_47_polygon.pmtiles"
@@ -239,15 +197,13 @@
 
         const map = new maplibregl.Map({
             container: 'map',
-            style: './std.json',
-            // style: 'https://gsi-cyberjapan.github.io/gsivectortile-mapbox-gl-js/std.json',
+            // style: './std.json',
+            style: 'https://tile2.openstreetmap.jp/styles/osm-bright-ja/style.json',
             zoom: 15,
             maxZoom: 23,
             minZoom: 4,
             center: [139.487748, 35.922752],
-            // maplibreLogo: true,
             hash: true,
-            // 既存Attributionを非表示
             attributionControl: false
         })
 
@@ -326,25 +282,8 @@
                 maplibregl: maplibregl
             }), 'top-left');
 
-        /*
-        // maplibre-gl-export
-        map.addControl(new MaplibreExportControl({
-            PageSize: Size.A4,
-            PageOrientation: PageOrientation.Portrait,
-            Format: Format.PNG,
-            DPI: DPI[96],
-            Crosshair: true,
-            PrintableArea: true,
-            Local: 'en'
-        }), 'top-right');
-        */
-
-        const sliderOpactiy = document.getElementById('slider-opacity');
-        const sliderOpactiyValue = document.getElementById('slider-opacity-value');
-
         map.on('load', () => {
-
-            // 全国最新写真（シームレス）
+            // 全国最新写真（シームレス）ソース
             map.addSource('seamlessphoto', {
                 type: 'raster',
                 tiles: ['https://cyberjapandata.gsi.go.jp/xyz/seamlessphoto/{z}/{x}/{y}.jpg'],
@@ -352,6 +291,7 @@
                 attribution: '<a href="https://maps.gsi.go.jp/development/ichiran.html#seamlessphoto">全国最新写真（シームレス）</a>'
             });
 
+            // 全国最新写真（シームレス）レイヤ
             map.addLayer({
                 id: 'seamlessphoto',
                 type: 'raster',
@@ -361,6 +301,8 @@
             });
 
             // スライダーで空中写真レイヤの不透明度を制御
+            const sliderOpactiy = document.getElementById('slider-opacity');
+            const sliderOpactiyValue = document.getElementById('slider-opacity-value');
 
             // 不透明度の初期表示
             map.setPaintProperty(
@@ -378,16 +320,7 @@
                 sliderOpactiyValue.textContent = e.target.value + '%';
             });
 
-            // ゾーン30
-            /*
-            map.addSource('kisei_99_47', {
-                'type': 'geojson',
-                'data': './202303011801_typeD_kisei_99_47_polygon.geojson',
-                attribution: '<a href="https://www.jartic.or.jp/">日本道路交通情報センター(JARTIC)オープンデータ「交通規制情報」を加工して作成</a>'
-            });
-            */
-
-            // ゾーン30ベクトルタイル（PMTiles）
+            // ゾーン30ベクトルタイル（PMTiles）ソース
             map.addSource("pmtiles-kisei", {
                 type: "vector",
                 url: "pmtiles://" + PMTILES_KISEI_URL,
@@ -428,16 +361,7 @@
                 }
             });
 
-            // 小学校
-            /*
-            map.addSource('primary-school', {
-                'type': 'geojson',
-                'data': './P29-21_primary school.geojson',
-                attribution: '<a href="https://nlftp.mlit.go.jp/">国土数値情報 学校データを加工して作成</a>'
-            });
-            */
-
-            // 小学校ベクトルタイル（PMTiles）
+            // 小学校ベクトルタイル（PMTiles）ソース
             map.addSource("pmtiles-school", {
                 type: "vector",
                 url: "pmtiles://" + PMTILES_SCHOOL_URL,
@@ -531,10 +455,32 @@
                 }
             });
 
+            // 死亡事故ラベルレイヤ
+            map.addLayer({
+                'id': 'shiboujiko-label',
+                'type': 'symbol',
+                "source": "pmtiles-jiko",
+                "source-layer": "honhyo_20192022_convertfgb",
+                "minzoom": 16,
+                "maxzoom": 23,
+                'layout': {
+                    'text-field': ['concat', ['get', '発生日時_年'], '/', ['get', '発生日時_月'], '/', ['get', '発生日時_日']],
+                    'text-font': ['Open Sans Semibold', 'Arial Unicode MS Bold'],
+                    'text-offset': [0, -1],
+                    'text-allow-overlap': true,
+                    'text-size': 12
+                },
+                'paint': {
+                    'text-color': 'rgba(255, 0, 0, 1)',
+                    'text-halo-color': 'rgba(255, 255, 255, 1)',
+                    'text-halo-width': 1
+                }
+            });
+
             // 死亡事故レイヤのフィルタ設定
             map.setFilter('shiboujiko-1', ['==', '事故内容', '死亡事故']);
             map.setFilter('shiboujiko-2', ['==', '事故内容', '死亡事故']);
-
+            map.setFilter('shiboujiko-label', ['==', '事故内容', '死亡事故']);
 
             // 負傷事故ポイントレイヤ
             map.addLayer({
@@ -565,9 +511,31 @@
                 }
             });
 
+            map.addLayer({
+                'id': 'fushoujiko-label',
+                'type': 'symbol',
+                "source": "pmtiles-jiko",
+                "source-layer": "honhyo_20192022_convertfgb",
+                "minzoom": 16,
+                "maxzoom": 23,
+                'layout': {
+                    'text-field': ['concat', ['get', '発生日時_年'], '/', ['get', '発生日時_月'], '/', ['get', '発生日時_日']],
+                    'text-font': ['Open Sans Semibold', 'Arial Unicode MS Bold'],
+                    'text-offset': [0, -1],
+                    'text-allow-overlap': true,
+                    'text-size': 12
+                },
+                'paint': {
+                    'text-color': 'rgba(0, 0, 255, 1)',
+                    'text-halo-color': 'rgba(255, 255, 255, 1)',
+                    'text-halo-width': 1
+                }
+            });
+
             // 負傷事故レイヤのフィルタ設定
             map.setFilter('fushoujiko-1', ['==', '事故内容', '負傷事故']);
             map.setFilter('fushoujiko-2', ['==', '事故内容', '負傷事故']);
+            map.setFilter('fushoujiko-label', ['==', '事故内容', '負傷事故']);
 
             map.showTileBoundaries = false;
 
