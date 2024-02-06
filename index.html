@@ -1,868 +1,1075 @@
 <html>
-
-<head>
-    <title>警察庁 交通事故マップ（PMTiles）</title>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script src="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.js"></script>
-    <link href="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.css" rel="stylesheet" />
-    <script src="https://unpkg.com/pmtiles@2.7.0/dist/index.js"></script>
-    <style>
-        body {
-            margin: 0;
-        }
-
-        #map {
-            height: 100%;
-            width: 100%;
-        }
-
-        .map-overlay {
-            font: bold 12px/20px 'Helvetica Neue', Arial, Helvetica, sans-serif;
-            position: absolute;
-            width: 240px;
-            bottom: 20px;
-            left: 0;
-            padding: 10px;
-        }
-
-        .map-overlay .map-overlay-inner {
-            background-color: #fff;
-            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-            border-radius: 3px;
-            padding: 10px;
-            margin-bottom: 10px;
-        }
-
-        .map-overlay label {
-            display: block;
-            margin: 0 0 0px;
-        }
-
-        .map-overlay input {
-            background-color: transparent;
-            display: inline-block;
-            width: 100%;
-            position: relative;
-            margin: 0;
-            cursor: ew-resize;
-        }
-
-        .maplibregl-popup .maplibregl-popup-content {
-            padding: 8px 10px;
-            font: 12px/14px Arial, Helvetica, sans-serif;
-            color: black;
-            background: white;
-            background: rgba(255, 255, 255, 0.9);
-            box-shadow: 0 0 15px rgba(0, 0, 0, 0.4);
-            border-radius: 5px;
-            width: 320px;
-            height: 320px;
-            overflow: scroll;
-        }
-
-        #select-pmtiles {
-            padding: 3px 4px;
-            font: 12px/14px Arial, Helvetica, sans-serif;
-            color: black;
-            background: white;
-            background: rgba(255, 255, 255, 1.0);
-            box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
-            border-radius: 5px;
-            width: fit-content;
-            position: absolute;
-            top: 5px;
-            left: 5px;
-            z-index: 10;
-        }
-
-        #info {
-            position: absolute;
-            padding: 10px;
-            font-size: 12px;
-            text-align: center;
-            color: #222;
-            background: #FFFFFF;
-            bottom: 90px;
-            left: 10px;
-            z-index: 1;
-        }
-
-        th,
-        td {
-            border: solid 1px;
-            /* 枠線指定 */
-        }
-
-        table {
-            font-size: 9pt;
-            /*table-layout: fixed;*/
-            /*width: 340px;*/
-            border-collapse: collapse;
-            /* セルの線を重ねる */
-        }
-
-        .legend {
-            background-color: #fff;
-            border-radius: 3px;
-            bottom: 40px;
-            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.10);
-            font: 12px/15px 'Helvetica Neue', Arial, Helvetica, sans-serif;
-            padding: 10px;
-            position: absolute;
-            right: 10px;
-            z-index: 1;
-            line-height: 25px;
-            height: 120px;
-        }
-
-        .legend h4 {
-            margin: 0 0 10px;
-        }
-
-        .legend div span {
-            border-radius: 50%;
-            display: inline-block;
-            height: 15px;
-            margin-right: 10px;
-            width: 15px;
-            color: orangered
-        }
-
-        .circle {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-        }
-
-        .square {
-            width: 10px;
-            height: 10px;
-            /*border-radius: 4px;*/
-        }
-    </style>
-</head>
-
-<body>
-    <div id="map"></div>
-    <pre id="info"></pre>
-    <div id='county-legend' class='legend'>
-        <div class="circle"
-            style='background-color: rgb(255, 0, 0);outline: 1px solid;outline-color: rgb(203, 0, 0); display: inline-block;'>
-        </div>
-        <span style="display: inline-block; margin-left: 5px;">死亡事故</span><br>
-        <div class="circle"
-            style='background-color: rgb(229, 229, 255);outline: 1px solid;outline-color: rgb(0, 0, 255); display: inline-block;'>
-        </div>
-        <span style="display: inline-block; margin-left: 5px;">負傷事故</span><br>
-        <div class="circle"
-            style='background-color: rgb(216, 255, 204);outline: 1px solid;outline-color: rgb(38, 152, 0); display: inline-block;'>
-        </div>
-        <span style="display: inline-block; margin-left: 5px;">小学校</span><br>
-        <div class="square"
-            style='background-color: rgb(213, 241, 228); outline: 1px solid;outline-color: rgb(45, 186, 118); display: inline-block;'>
-        </div>
-        <span style="margin-left: 5px;">ゾーン30または<br>最高速度区域30km/h</span>
-    </div>
-    <div class="map-overlay top">
-        <div class="map-overlay-inner">
-            <label>空中写真 不透明度: <span id="slider-opacity-value">50%</span></label>
-            <input id="slider-opacity" type="range" min="0" max="100" step="0" value="50">
-        </div>
-    </div>
-    <!-- Load the `maplibre-gl-geocoder` plugin. -->
-    <script src="https://unpkg.com/@maplibre/maplibre-gl-geocoder@1.2.0/dist/maplibre-gl-geocoder.min.js"></script>
-    <link rel="stylesheet" href="https://unpkg.com/@maplibre/maplibre-gl-geocoder@1.2.0/dist/maplibre-gl-geocoder.css"
-        type="text/css" />
-    <script type="text/javascript">
-        // add the PMTiles plugin to the maplibregl global.
-        let protocol = new pmtiles.Protocol();
-        maplibregl.addProtocol("pmtiles", protocol.tile);
-
-        let PMTILES_JIKO_URL = "https://xs489works.xsrv.jp/pmtiles-data/traffic-accident/honhyo_2019-2022_convert.pmtiles";
-        let PMTILES_SCHOOL_URL = "https://xs489works.xsrv.jp/pmtiles-data/traffic-accident/P29-21_primary_school.pmtiles"
-        let PMTILES_KISEI_URL = "https://xs489works.xsrv.jp/pmtiles-data/traffic-accident/202303011801_typeD_kisei_99_47_polygon.pmtiles"
-
-        const p_jiko = new pmtiles.PMTiles(PMTILES_JIKO_URL)
-        const p_school = new pmtiles.PMTiles(PMTILES_SCHOOL_URL)
-        const p_kisei = new pmtiles.PMTiles(PMTILES_KISEI_URL)
-        p_jiko.getMetadata().then((res) => console.log(res));
-        p_school.getMetadata().then((res) => console.log(res));
-        p_kisei.getMetadata().then((res) => console.log(res));
-
-        // this is so we share one instance across the JS code and the map renderer
-        protocol.add(p_jiko);
-        protocol.add(p_school);
-        protocol.add(p_kisei);
-
-        const map = new maplibregl.Map({
-            container: 'map',
-            // style: './std.json',
-            style: 'https://tile2.openstreetmap.jp/styles/osm-bright-ja/style.json',
-            zoom: 15,
-            maxZoom: 23,
-            minZoom: 4,
-            center: [139.487748, 35.922752],
-            hash: true,
-            attributionControl: false
-        })
-
-        // ズーム・回転
-        map.addControl(new maplibregl.NavigationControl());
-
-        // フルスクリーンモードのオンオフ
-        map.addControl(new maplibregl.FullscreenControl());
-
-        // 現在位置表示
-        map.addControl(new maplibregl.GeolocateControl({
-            positionOptions: {
-                enableHighAccuracy: false
-            },
-            fitBoundsOptions: { maxZoom: 18 },
-            trackUserLocation: true,
-            showUserLocation: true
-        }));
-
-        // スケール表示
-        map.addControl(new maplibregl.ScaleControl({
-            maxWidth: 200,
-            unit: 'metric'
-        }));
-
-        // Attributionを折りたたみ表示
-        map.addControl(new maplibregl.AttributionControl({
-            compact: true,
-            customAttribution: '（<a href="https://twitter.com/shi__works" target="_blank">Twitter</a> | <a href="https://github.com/shi-works/traffic-accident-map" target="_blank">Github</a>） '
-        }));
-
-        // ジオコーダー追加
-        var geocoder_api = {
-            forwardGeocode: async (config) => {
-                const features = [];
-                try {
-                    let request =
-                        'https://nominatim.openstreetmap.org/search?q=' +
-                        config.query +
-                        '&format=geojson&polygon_geojson=1&addressdetails=1';
-                    const response = await fetch(request);
-                    const geojson = await response.json();
-                    for (let feature of geojson.features) {
-                        let center = [
-                            feature.bbox[0] +
-                            (feature.bbox[2] - feature.bbox[0]) / 2,
-                            feature.bbox[1] +
-                            (feature.bbox[3] - feature.bbox[1]) / 2
-                        ];
-                        let point = {
-                            type: 'Feature',
-                            geometry: {
-                                type: 'Point',
-                                coordinates: center
-                            },
-                            place_name: feature.properties.display_name,
-                            properties: feature.properties,
-                            text: feature.properties.display_name,
-                            place_type: ['place'],
-                            center: center
-                        };
-                        features.push(point);
-                    }
-                } catch (e) {
-                    console.error(`Failed to forwardGeocode with error: ${e}`);
-                }
-
-                return {
-                    features: features
-                };
+    <head>
+        <title>警察庁 交通事故マップ（PMTiles）</title>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
+        <link href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" rel="stylesheet" />
+        <script src="https://unpkg.com/pmtiles@2.11.0/dist/index.js"></script>
+        <script src="https://unpkg.com/@maplibre/maplibre-gl-geocoder@1.2.0/dist/maplibre-gl-geocoder.min.js"></script>
+        <link rel="stylesheet" href="https://unpkg.com/@maplibre/maplibre-gl-geocoder@1.2.0/dist/maplibre-gl-geocoder.css" type="text/css" />
+        <style>
+            body {
+                margin: 0;
             }
-        };
 
-        map.addControl(
-            new MaplibreGeocoder(geocoder_api, {
-                maplibregl: maplibregl
-            }), 'top-left');
+            #map {
+                height: 100%;
+                width: 100%;
+            }
 
-        map.on('load', () => {
-            // 全国最新写真（シームレス）ソース
-            map.addSource('seamlessphoto', {
-                type: 'raster',
-                tiles: ['https://cyberjapandata.gsi.go.jp/xyz/seamlessphoto/{z}/{x}/{y}.jpg'],
-                tileSize: 256,
-                attribution: '<a href="https://maps.gsi.go.jp/development/ichiran.html#seamlessphoto">全国最新写真（シームレス）</a>'
+            .map-overlay {
+                font: bold 12px/20px 'Helvetica Neue', Arial, Helvetica, sans-serif;
+                position: absolute;
+                width: 180px;
+                bottom: 20px;
+                left: 0;
+                padding: 10px;
+            }
+
+            .map-overlay .map-overlay-inner {
+                background-color: #fff;
+                box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+                border-radius: 3px;
+                padding: 10px;
+                margin-bottom: 10px;
+            }
+
+            .map-overlay label {
+                display: block;
+                margin: 0 0 0px;
+            }
+
+            .map-overlay input {
+                background-color: transparent;
+                display: inline-block;
+                width: 100%;
+                position: relative;
+                margin: 0;
+                cursor: ew-resize;
+            }
+
+            .maplibregl-popup .maplibregl-popup-content {
+                padding: 8px 10px;
+                font: 12px/14px Arial, Helvetica, sans-serif;
+                color: black;
+                background: white;
+                background: rgba(255, 255, 255, 0.9);
+                box-shadow: 0 0 15px rgba(0, 0, 0, 0.4);
+                border-radius: 5px;
+                width: 320px;
+                height: 320px;
+                overflow: scroll;
+            }
+
+            #select-pmtiles {
+                padding: 3px 4px;
+                font: 12px/14px Arial, Helvetica, sans-serif;
+                color: black;
+                background: white;
+                background: rgba(255, 255, 255, 1);
+                box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+                border-radius: 5px;
+                width: fit-content;
+                position: absolute;
+                top: 5px;
+                left: 5px;
+                z-index: 10;
+            }
+
+            #info {
+                position: absolute;
+                padding: 10px;
+                font-size: 12px;
+                text-align: center;
+                color: #222;
+                background: #ffffff;
+                bottom: 90px;
+                left: 10px;
+                z-index: 1;
+            }
+
+            th,
+            td {
+                border: solid 1px;
+            }
+
+            table {
+                font-size: 9pt;
+                border-collapse: collapse;
+            }
+
+            .legend {
+                background-color: #fff;
+                border-radius: 3px;
+                bottom: 40px;
+                box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+                font: 12px/15px 'Helvetica Neue', Arial, Helvetica, sans-serif;
+                padding: 10px;
+                position: absolute;
+                right: 10px;
+                z-index: 1;
+                line-height: 25px;
+                height: 120px;
+            }
+
+            .legend h4 {
+                margin: 0 0 10px;
+            }
+
+            .legend div span {
+                border-radius: 50%;
+                display: inline-block;
+                height: 15px;
+                margin-right: 10px;
+                width: 15px;
+                color: orangered;
+            }
+
+            .circle {
+                width: 12px;
+                height: 12px;
+                border-radius: 50%;
+            }
+
+            .square {
+                width: 10px;
+                height: 10px;
+                /*border-radius: 4px;*/
+            }
+        </style>
+    </head>
+
+    <body>
+        <div id="map"></div>
+        <!--<pre id="info"></pre>-->
+        <div id="county-legend" class="legend">
+            <div class="circle" style="background-color: rgb(255, 0, 0); outline: 1px solid; outline-color: rgb(203, 0, 0); display: inline-block"></div>
+            <span style="display: inline-block; margin-left: 5px">死亡事故</span><br />
+            <div class="circle" style="background-color: rgb(229, 229, 255); outline: 1px solid; outline-color: rgb(0, 0, 255); display: inline-block"></div>
+            <span style="display: inline-block; margin-left: 5px">負傷事故</span><br />
+            <div class="circle" style="background-color: rgb(216, 255, 204); outline: 1px solid; outline-color: rgb(38, 152, 0); display: inline-block"></div>
+            <span style="display: inline-block; margin-left: 5px">小学校</span><br />
+            <div class="square" style="background-color: rgb(213, 241, 228); outline: 1px solid; outline-color: rgb(45, 186, 118); display: inline-block"></div>
+            <span style="margin-left: 5px">ゾーン30または<br />最高速度区域30km/h</span>
+        </div>
+        <div class="map-overlay top">
+            <div class="map-overlay-inner">
+                <label>空中写真 不透明度: <span id="slider-opacity-value">50%</span></label>
+                <input id="slider-opacity" type="range" min="0" max="100" step="0" value="50" />
+            </div>
+        </div>
+        <script type="text/javascript">
+            // addProtocolの設定
+            let protocol = new pmtiles.Protocol();
+            maplibregl.addProtocol('pmtiles', protocol.tile);
+
+            // マップの初期化
+            const map = new maplibregl.Map({
+                container: 'map',
+                // style: './std.json',
+                // style: 'https://tile2.openstreetmap.jp/styles/osm-bright-ja/style.json',
+                style: 'https://tile.openstreetmap.jp/styles/maptiler-basic-ja/style.json',
+                zoom: 15,
+                maxZoom: 23,
+                minZoom: 4,
+                center: [139.487748, 35.922752],
+                hash: true,
+                attributionControl: false,
             });
 
-            // 全国最新写真（シームレス）レイヤ
-            map.addLayer({
-                id: 'seamlessphoto',
-                type: 'raster',
-                source: 'seamlessphoto',
-                minzoom: 14,
-                maxzoom: 23,
-            });
+            // ズーム・回転
+            map.addControl(new maplibregl.NavigationControl());
 
-            // スライダーで空中写真レイヤの不透明度を制御
-            const sliderOpactiy = document.getElementById('slider-opacity');
-            const sliderOpactiyValue = document.getElementById('slider-opacity-value');
+            // フルスクリーンモードのオンオフ
+            map.addControl(new maplibregl.FullscreenControl());
 
-            // 不透明度の初期表示
-            map.setPaintProperty(
-                'seamlessphoto',
-                'raster-opacity',
-                0.5
+            // 現在位置表示
+            map.addControl(
+                new maplibregl.GeolocateControl({
+                    positionOptions: {
+                        enableHighAccuracy: false,
+                    },
+                    fitBoundsOptions: { maxZoom: 18 },
+                    trackUserLocation: true,
+                    showUserLocation: true,
+                })
             );
 
-            sliderOpactiy.addEventListener('input', (e) => {
-                map.setPaintProperty(
-                    'seamlessphoto',
-                    'raster-opacity',
-                    parseInt(e.target.value, 10) / 100
-                );
-                sliderOpactiyValue.textContent = e.target.value + '%';
-            });
+            // スケール表示
+            map.addControl(
+                new maplibregl.ScaleControl({
+                    maxWidth: 200,
+                    unit: 'metric',
+                })
+            );
 
-            // ゾーン30ベクトルタイル（PMTiles）ソース
-            map.addSource("pmtiles-kisei", {
-                type: "vector",
-                url: "pmtiles://" + PMTILES_KISEI_URL,
-                attribution: '<a href="https://www.jartic.or.jp/">日本道路交通情報センター(JARTIC)オープンデータ「交通規制情報」を加工して作成</a>'
-            });
+            // Attributionを折りたたみ表示
+            map.addControl(
+                new maplibregl.AttributionControl({
+                    compact: true,
+                    customAttribution: '（<a href="https://twitter.com/shi__works" target="_blank">Twitter</a> | <a href="https://github.com/shi-works/traffic-accident-map" target="_blank">Github</a>） ',
+                })
+            );
 
-            // ゾーン30ポリゴンレイヤ
-            map.addLayer({
-                'id': 'kisei-fill',
-                'type': 'fill',
-                'source': 'pmtiles-kisei',
-                "source-layer": "202303011801_typeD_kisei_99_47_polygon",
-                minzoom: 13,
-                maxzoom: 23,
-                'layout': {
+            //ジオコーダー（国土地理院 地名検索API）
+            var geocoder_api = {
+                forwardGeocode: async (config) => {
+                    const features = [];
+                    const Text_Prefix = config.query.substr(0, 3);
+                    try {
+                        let request = 'https://msearch.gsi.go.jp/address-search/AddressSearch?q=' + config.query;
+                        const response = await fetch(request);
+                        const geojson = await response.json();
+
+                        for (var i = 0; i < geojson.length; i++) {
+                            if (geojson[i].properties.title.indexOf(Text_Prefix) !== -1) {
+                                let point = {
+                                    type: 'Feature',
+                                    geometry: {
+                                        type: 'Point',
+                                        coordinates: geojson[i].geometry.coordinates,
+                                    },
+                                    place_name: geojson[i].properties.title,
+                                    properties: geojson[i].properties,
+                                    text: geojson[i].properties.title,
+                                    place_type: ['place'],
+                                    center: geojson[i].geometry.coordinates,
+                                };
+                                features.push(point);
+                            }
+                        }
+                    } catch (e) {
+                        console.error(`Failed to forwardGeocode with error: ${e}`);
+                    }
+                    return {
+                        features: features,
+                    };
                 },
-                'paint': {
-                    'fill-color': 'rgba(45, 186, 118, 1)',
-                    'fill-opacity': 0.2
-                }
+            };
+            map.addControl(new MaplibreGeocoder(geocoder_api, { maplibregl: maplibregl }), 'top-left');
+
+            // マップをロード
+            map.on('load', () => {
+                // 全国最新写真（シームレス）ソース
+                map.addSource('seamlessphoto', {
+                    type: 'raster',
+                    tiles: ['https://cyberjapandata.gsi.go.jp/xyz/seamlessphoto/{z}/{x}/{y}.jpg'],
+                    tileSize: 256,
+                    attribution: '<a href="https://maps.gsi.go.jp/development/ichiran.html#seamlessphoto">全国最新写真（シームレス）</a>',
+                });
+
+                // 全国最新写真（シームレス）レイヤ
+                map.addLayer({
+                    id: 'seamlessphoto',
+                    type: 'raster',
+                    source: 'seamlessphoto',
+                    minzoom: 14,
+                    maxzoom: 23,
+                });
+
+                // スライダーで空中写真レイヤの不透明度を制御
+                const sliderOpactiy = document.getElementById('slider-opacity');
+                const sliderOpactiyValue = document.getElementById('slider-opacity-value');
+
+                // 不透明度の初期表示
+                map.setPaintProperty('seamlessphoto', 'raster-opacity', 0.5);
+
+                sliderOpactiy.addEventListener('input', (e) => {
+                    map.setPaintProperty('seamlessphoto', 'raster-opacity', parseInt(e.target.value, 10) / 100);
+                    sliderOpactiyValue.textContent = e.target.value + '%';
+                });
+
+                // ゾーン30ソース
+                map.addSource('pmtiles-kisei', {
+                    type: 'vector',
+                    url: 'pmtiles://https://xs489works.xsrv.jp/pmtiles-data/traffic-accident/202303011801_typeD_kisei_99_47_polygon.pmtiles',
+                    attribution: '<a href="https://www.jartic.or.jp/">日本道路交通情報センター(JARTIC)オープンデータ「交通規制情報」を加工して作成</a>',
+                });
+
+                // ゾーン30ポリゴンレイヤ
+                map.addLayer({
+                    id: 'kisei-fill',
+                    type: 'fill',
+                    source: 'pmtiles-kisei',
+                    'source-layer': '202303011801_typeD_kisei_99_47_polygon',
+                    minzoom: 13,
+                    maxzoom: 23,
+                    layout: {},
+                    paint: {
+                        'fill-color': 'rgba(45, 186, 118, 1)',
+                        'fill-opacity': 0.2,
+                    },
+                });
+
+                // ゾーン30ラインレイヤ
+                map.addLayer({
+                    id: 'kisei-line',
+                    type: 'line',
+                    source: 'pmtiles-kisei',
+                    'source-layer': '202303011801_typeD_kisei_99_47_polygon',
+                    minzoom: 13,
+                    maxzoom: 23,
+                    layout: {
+                        'line-join': 'round',
+                        'line-cap': 'round',
+                    },
+                    paint: {
+                        'line-color': 'rgba(45, 186, 118, 1)',
+                        'line-opacity': 1,
+                    },
+                });
+
+                // 小学校ソース
+                map.addSource('pmtiles-school', {
+                    type: 'vector',
+                    url: 'pmtiles://https://xs489works.xsrv.jp/pmtiles-data/traffic-accident/P29-21_primary_school.pmtiles',
+                    attribution: '<a href="https://nlftp.mlit.go.jp/">国土数値情報 学校データを加工して作成</a>',
+                });
+
+                // 小学校ポイントレイヤ
+                map.addLayer({
+                    id: 'school-1',
+                    source: 'pmtiles-school',
+                    'source-layer': 'P2921_primary_school',
+                    type: 'circle',
+                    minzoom: 13,
+                    maxzoom: 23,
+                    paint: {
+                        'circle-color': 'rgba(38, 152, 0, 1)',
+                        'circle-blur': 0.8,
+                        'circle-radius': 12,
+                    },
+                });
+
+                // 小学校ポイントレイヤ
+                map.addLayer({
+                    id: 'school-2',
+                    source: 'pmtiles-school',
+                    'source-layer': 'P2921_primary_school',
+                    type: 'circle',
+                    minzoom: 13,
+                    maxzoom: 23,
+                    paint: {
+                        'circle-color': 'rgba(216, 255, 204, 1)',
+                        'circle-radius': 6,
+                    },
+                });
+
+                // 小学校ラベルレイヤ
+                map.addLayer({
+                    id: 'school-label',
+                    type: 'symbol',
+                    source: 'pmtiles-school',
+                    'source-layer': 'P2921_primary_school',
+                    minzoom: 13,
+                    maxzoom: 23,
+                    layout: {
+                        'text-field': ['get', 'P29_004'],
+                        'text-font': ['Open Sans Semibold', 'Arial Unicode MS Bold'],
+                        'text-size': 12,
+                        'text-offset': [0, -1.2],
+                    },
+                    paint: {
+                        'text-color': 'rgba(0,　152,　0, 1)',
+                        'text-halo-blur': 1,
+                        'text-halo-color': 'rgba(255, 255, 255, 1)',
+                        'text-halo-width': 1.5,
+                    },
+                });
+
+                // 交通事故データ
+                map.addSource('pmtiles-jiko', {
+                    type: 'vector',
+                    url: 'pmtiles://https://xs489works.xsrv.jp/pmtiles-data/traffic-accident/honhyo_2019-2022_convert.pmtiles',
+                    attribution: '<a href="https://www.npa.go.jp/publications/statistics/koutsuu/opendata/index_opendata.html">交通事故統計情報のオープンデータ（2019～2022年）（警察庁Webサイト）を加工して作成</a>',
+                });
+
+                // 死亡事故ポイントレイヤ
+                map.addLayer({
+                    id: 'shiboujiko-1',
+                    source: 'pmtiles-jiko',
+                    // "source-layer": "honhyo_20192021_convert",
+                    // "source-layer": "honhyo_20192021_convert_v2fgb",
+                    'source-layer': 'honhyo_20192022_convertfgb',
+                    type: 'circle',
+                    paint: {
+                        'circle-color': 'rgba(203, 0, 0, 1)',
+                        'circle-blur': 1,
+                        'circle-radius': 12,
+                    },
+                });
+
+                // 死亡事故ポイントレイヤ
+                map.addLayer({
+                    id: 'shiboujiko-2',
+                    source: 'pmtiles-jiko',
+                    //"source-layer": "honhyo_20192021_convert",
+                    // "source-layer": "honhyo_20192021_convert_v2fgb",
+                    'source-layer': 'honhyo_20192022_convertfgb',
+                    type: 'circle',
+                    paint: {
+                        'circle-color': 'rgba(255, 0, 0, 1)',
+                        'circle-radius': 5,
+                    },
+                });
+
+                // 死亡事故ラベルレイヤ
+                map.addLayer({
+                    id: 'shiboujiko-label',
+                    type: 'symbol',
+                    source: 'pmtiles-jiko',
+                    'source-layer': 'honhyo_20192022_convertfgb',
+                    minzoom: 16,
+                    maxzoom: 23,
+                    layout: {
+                        'text-field': ['concat', ['get', '発生日時_年'], '/', ['get', '発生日時_月'], '/', ['get', '発生日時_日']],
+                        'text-font': ['Open Sans Semibold', 'Arial Unicode MS Bold'],
+                        'text-offset': [0, -1],
+                        'text-allow-overlap': true,
+                        'text-size': 12,
+                    },
+                    paint: {
+                        'text-color': 'rgba(255, 0, 0, 1)',
+                        'text-halo-color': 'rgba(255, 255, 255, 1)',
+                        'text-halo-width': 1,
+                    },
+                });
+
+                // 死亡事故レイヤのフィルタ設定
+                map.setFilter('shiboujiko-1', ['==', '事故内容', '死亡事故']);
+                map.setFilter('shiboujiko-2', ['==', '事故内容', '死亡事故']);
+                map.setFilter('shiboujiko-label', ['==', '事故内容', '死亡事故']);
+
+                // 負傷事故ポイントレイヤ
+                map.addLayer({
+                    id: 'fushoujiko-1',
+                    source: 'pmtiles-jiko',
+                    //"source-layer": "honhyo_20192021_convert",
+                    // "source-layer": "honhyo_20192021_convert_v2fgb",
+                    'source-layer': 'honhyo_20192022_convertfgb',
+                    type: 'circle',
+                    paint: {
+                        'circle-color': 'rgba(0, 0, 255, 0.6)',
+                        'circle-blur': 0.8,
+                        'circle-radius': 12,
+                    },
+                });
+
+                // 負傷事故ポイントレイヤ
+                map.addLayer({
+                    id: 'fushoujiko-2',
+                    source: 'pmtiles-jiko',
+                    //"source-layer": "honhyo_20192021_convert",
+                    // "source-layer": "honhyo_20192021_convert_v2fgb",
+                    'source-layer': 'honhyo_20192022_convertfgb',
+                    type: 'circle',
+                    paint: {
+                        'circle-color': 'rgba(229, 229, 255, 1)',
+                        'circle-radius': 5,
+                    },
+                });
+
+                // 負傷事故ラベルレイヤ
+                map.addLayer({
+                    id: 'fushoujiko-label',
+                    type: 'symbol',
+                    source: 'pmtiles-jiko',
+                    'source-layer': 'honhyo_20192022_convertfgb',
+                    minzoom: 16,
+                    maxzoom: 23,
+                    layout: {
+                        'text-field': ['concat', ['get', '発生日時_年'], '/', ['get', '発生日時_月'], '/', ['get', '発生日時_日']],
+                        'text-font': ['Open Sans Semibold', 'Arial Unicode MS Bold'],
+                        'text-offset': [0, -1],
+                        'text-allow-overlap': true,
+                        'text-size': 12,
+                    },
+                    paint: {
+                        'text-color': 'rgba(0, 0, 255, 1)',
+                        'text-halo-color': 'rgba(255, 255, 255, 1)',
+                        'text-halo-width': 1,
+                    },
+                });
+
+                // 負傷事故レイヤのフィルタ設定
+                map.setFilter('fushoujiko-1', ['==', '事故内容', '負傷事故']);
+                map.setFilter('fushoujiko-2', ['==', '事故内容', '負傷事故']);
+                map.setFilter('fushoujiko-label', ['==', '事故内容', '負傷事故']);
+
+                map.showTileBoundaries = false;
+
+                /*
+                // マウスポインタの座標（フルスクリーンモードで消えるバグあり、スマホで表示されない）
+                map.on('mousemove', (e) => {
+                    document.getElementById('info').innerHTML = JSON.stringify('緯度=' + e.lngLat.lat.toFixed(5) + ', 経度=' + e.lngLat.lng.toFixed(5));
+                });
+                */
             });
 
-            // ゾーン30ラインレイヤ
-            map.addLayer({
-                'id': 'kisei-line',
-                'type': 'line',
-                'source': 'pmtiles-kisei',
-                "source-layer": "202303011801_typeD_kisei_99_47_polygon",
-                minzoom: 13,
-                maxzoom: 23,
-                'layout': {
-                    'line-join': 'round',
-                    'line-cap': 'round'
-                },
-                'paint': {
-                    'line-color': 'rgba(45, 186, 118, 1)',
-                    'line-opacity': 1
-                }
+            // 死亡事故ポップアップ表示
+            map.on('click', 'shiboujiko-1', (e) => {
+                // var lng = e.lngLat.lng;
+                // var lat = e.lngLat.lat;
+                var lng = e.features[0].geometry.coordinates[0];
+                var lat = e.features[0].geometry.coordinates[1];
+
+                var jikonaiyo = e.features[0].properties['事故内容'];
+                var shishasu = parseInt(e.features[0].properties['死者数']);
+                var fushoshasu = parseInt(e.features[0].properties['負傷者数']);
+                var rosemmei = e.features[0].properties['路線名'];
+                var jogesen = e.features[0].properties['上下線'];
+                var hasseinichiji = e.features[0].properties['発生日時_年'] + '年' + e.features[0].properties['発生日時_月'] + '月' + e.features[0].properties['発生日時_日'] + '日' + e.features[0].properties['発生日時_時'] + '時' + e.features[0].properties['発生日時_分'] + '分';
+                var tenko = e.features[0].properties['天候'];
+                var chikei = e.features[0].properties['地形'];
+                var romenjotai = e.features[0].properties['路面状態'];
+                var dorokeijo = e.features[0].properties['道路形状'];
+                var shingoki = e.features[0].properties['信号機'];
+                var shadofukuin = e.features[0].properties['車道幅員'];
+                var dorosenkei = e.features[0].properties['道路線形'];
+                var shototsuchiten = e.features[0].properties['衝突地点'];
+                var zonkisei = e.features[0].properties['ゾーン規制'];
+                var chuobunritaishisetsuto = e.features[0].properties['中央分離帯施設等'];
+                var hoshadokubun = e.features[0].properties['歩車道区分'];
+                var jikoruikei = e.features[0].properties['事故類型'];
+
+                var nenrei_a = e.features[0].properties['年齢（当事者A）'];
+                var nenrei_b = e.features[0].properties['年齢（当事者B）'];
+                var tojishashubetsu_a = e.features[0].properties['当事者種別（当事者A）'];
+                var tojishashubetsu_b = e.features[0].properties['当事者種別（当事者B）'];
+                var yotobetsu_a = e.features[0].properties['用途別（当事者A）'];
+                var yotobetsu_b = e.features[0].properties['用途別（当事者B）'];
+                var sharyokeijo_a = e.features[0].properties['車両形状（当事者A）'];
+                var sharyokeijo_b = e.features[0].properties['車両形状（当事者B）'];
+                var sokudokisei_a = e.features[0].properties['速度規制（指定のみ）（当事者A）'];
+                var sokudokisei_b = e.features[0].properties['速度規制（指定のみ）（当事者B）'];
+                var ichijiteishikisei_hyoshiki_a = e.features[0].properties['一時停止規制_標識（当事者A）'];
+                var ichijiteishikisei_hyoji_a = e.features[0].properties['一時停止規制_表示（当事者A）'];
+                var ichijiteishikisei_hyoshiki_b = e.features[0].properties['一時停止規制_標識（当事者B）'];
+                var ichijiteishikisei_hyoji_b = e.features[0].properties['一時停止規制_表示（当事者B）'];
+                var sharyonoshototsubui_a = e.features[0].properties['車両の衝突部位（当事者A）'];
+                var sharyonoshototsubui_b = e.features[0].properties['車両の衝突部位（当事者B）'];
+                var sharyonosonkaiteido_a = e.features[0].properties['車両の損壊程度（当事者A）'];
+                var sharyonosonkaiteido_b = e.features[0].properties['車両の損壊程度（当事者B）'];
+                var eabaggunosobi_a = e.features[0].properties['エアバッグの装備（当事者A）'];
+                var eabaggunosobi_b = e.features[0].properties['エアバッグの装備（当事者B）'];
+                var saidoeabaggunosobi_a = e.features[0].properties['サイドエアバッグの装備（当事者A）'];
+                var saidoeabaggunosobi_b = e.features[0].properties['サイドエアバッグの装備（当事者B）'];
+                var jinshinsonshoteido_a = e.features[0].properties['人身損傷程度（当事者A）'];
+                var jinshinsonshoteido_b = e.features[0].properties['人身損傷程度（当事者B）'];
+
+                new maplibregl.Popup()
+                    .setLngLat(e.lngLat)
+                    .setHTML(
+                        // 事故内容
+                        '<b>' +
+                            '<big>' +
+                            '<font color="red">' +
+                            '事故内容: ' +
+                            jikonaiyo +
+                            '</font>' +
+                            '</big>' +
+                            '</b>' +
+                            '<br>' +
+                            '発生日時: ' +
+                            hasseinichiji +
+                            '<br>' +
+                            '路線名: ' +
+                            rosemmei +
+                            '<br>' +
+                            '上下線: ' +
+                            jogesen +
+                            '<br>' +
+                            '死者数: ' +
+                            shishasu +
+                            '<br>' +
+                            '負傷者数: ' +
+                            fushoshasu +
+                            '<br>' +
+                            '天候: ' +
+                            tenko +
+                            '<br>' +
+                            '地形: ' +
+                            chikei +
+                            '<br>' +
+                            '路面状態: ' +
+                            romenjotai +
+                            '<br>' +
+                            '道路形状: ' +
+                            dorokeijo +
+                            '<br>' +
+                            '信号機: ' +
+                            shingoki +
+                            '<br>' +
+                            '車道幅員: ' +
+                            shadofukuin +
+                            '<br>' +
+                            '道路線形: ' +
+                            dorosenkei +
+                            '<br>' +
+                            '衝突地点: ' +
+                            shototsuchiten +
+                            '<br>' +
+                            'ゾーン規制: ' +
+                            zonkisei +
+                            '<br>' +
+                            '中央分離帯施設等: ' +
+                            chuobunritaishisetsuto +
+                            '<br>' +
+                            '歩車道区分: ' +
+                            hoshadokubun +
+                            '<br>' +
+                            '事故類型: ' +
+                            jikoruikei +
+                            '<br>' +
+                            // 表形式
+                            '<table>' +
+                            '<tr>' +
+                            '<th width="140">' +
+                            '項目' +
+                            '</th> ' +
+                            '<th width="100">' +
+                            '当事者A' +
+                            '</th> ' +
+                            '<th width="100">' +
+                            '当事者B' +
+                            '</th>' +
+                            '</tr>' +
+                            '<tr>' +
+                            '<td>' +
+                            '年齢層' +
+                            '</td> ' +
+                            '<td>' +
+                            nenrei_a +
+                            '</td> ' +
+                            '<td>' +
+                            nenrei_b +
+                            '</td>' +
+                            '</tr>' +
+                            '<tr>' +
+                            '<td>' +
+                            '当事者種別' +
+                            '</td> ' +
+                            '<td>' +
+                            tojishashubetsu_a +
+                            '</td> ' +
+                            '<td>' +
+                            tojishashubetsu_b +
+                            '</td>' +
+                            '</tr>' +
+                            '<tr>' +
+                            '<td>' +
+                            '車両の衝突部位' +
+                            '</td> ' +
+                            '<td>' +
+                            sharyonoshototsubui_a +
+                            '</td> ' +
+                            '<td>' +
+                            sharyonoshototsubui_b +
+                            '</td>' +
+                            '</tr>' +
+                            '<tr>' +
+                            '<td>' +
+                            '車両の損壊程度' +
+                            '</td> ' +
+                            '<td>' +
+                            sharyonosonkaiteido_a +
+                            '</td> ' +
+                            '<td>' +
+                            sharyonosonkaiteido_b +
+                            '</td>' +
+                            '</tr>' +
+                            '<tr>' +
+                            '<td>' +
+                            '人身損傷程度' +
+                            '</td> ' +
+                            '<td>' +
+                            jinshinsonshoteido_a +
+                            '</td> ' +
+                            '<td>' +
+                            jinshinsonshoteido_b +
+                            '</td>' +
+                            '</tr>' +
+                            '<tr>' +
+                            '<td>' +
+                            '用途別' +
+                            '</td> ' +
+                            '<td>' +
+                            yotobetsu_a +
+                            '</td> ' +
+                            '<td>' +
+                            yotobetsu_b +
+                            '</td>' +
+                            '</tr>' +
+                            '<tr>' +
+                            '<td>' +
+                            '車両形状' +
+                            '</td> ' +
+                            '<td>' +
+                            sharyokeijo_a +
+                            '</td> ' +
+                            '<td>' +
+                            sharyokeijo_b +
+                            '</td>' +
+                            '</tr>' +
+                            '<tr>' +
+                            '<td>' +
+                            '速度規制（指定のみ）' +
+                            '</td> ' +
+                            '<td>' +
+                            sokudokisei_a +
+                            '</td> ' +
+                            '<td>' +
+                            sokudokisei_b +
+                            '</td>' +
+                            '</tr>' +
+                            '<tr>' +
+                            '<td>' +
+                            '一時停止規制_標識' +
+                            '</td> ' +
+                            '<td>' +
+                            ichijiteishikisei_hyoshiki_a +
+                            '</td> ' +
+                            '<td>' +
+                            ichijiteishikisei_hyoshiki_b +
+                            '</td>' +
+                            '</tr>' +
+                            '<tr>' +
+                            '<td>' +
+                            '一時停止規制_表示' +
+                            '</td> ' +
+                            '<td>' +
+                            ichijiteishikisei_hyoji_a +
+                            '</td> ' +
+                            '<td>' +
+                            ichijiteishikisei_hyoji_b +
+                            '</td>' +
+                            '</tr>' +
+                            '<tr>' +
+                            '<td>' +
+                            'ｴｱﾊﾞｯｸﾞの装備' +
+                            '</td> ' +
+                            '<td>' +
+                            eabaggunosobi_a +
+                            '</td> ' +
+                            '<td>' +
+                            eabaggunosobi_b +
+                            '</td>' +
+                            '</tr>' +
+                            '<tr>' +
+                            '<td>' +
+                            'ｻｲﾄﾞｴｱﾊﾞｯｸﾞの装備' +
+                            '</td> ' +
+                            '<td>' +
+                            saidoeabaggunosobi_a +
+                            '</td> ' +
+                            '<td>' +
+                            saidoeabaggunosobi_b +
+                            '</td>' +
+                            '</tr>' +
+                            '<table>' +
+                            '座標: ' +
+                            lat.toFixed(7) +
+                            ',' +
+                            lng.toFixed(7) +
+                            ' ※事故発生位置の座標<br>' +
+                            '<a href=\https://www.google.com/maps?q=' +
+                            lat +
+                            ',' +
+                            lng +
+                            "&hl=ja' target='_blank'>🌎Google Maps</a>" +
+                            ' ' +
+                            '<a href=\https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=' +
+                            lat +
+                            ',' +
+                            lng +
+                            "&hl=ja' target='_blank'>📷Street View</a>"
+                    )
+                    .addTo(map);
             });
 
-            // 小学校ベクトルタイル（PMTiles）ソース
-            map.addSource("pmtiles-school", {
-                type: "vector",
-                url: "pmtiles://" + PMTILES_SCHOOL_URL,
-                attribution: '<a href="https://nlftp.mlit.go.jp/">国土数値情報 学校データを加工して作成</a>'
+            // 負傷事故ポップアップ表示
+            map.on('click', 'fushoujiko-1', (e) => {
+                // lng = e.lngLat.lng;
+                // lat = e.lngLat.lat;
+                var lng = e.features[0].geometry.coordinates[0];
+                var lat = e.features[0].geometry.coordinates[1];
+
+                var jikonaiyo = e.features[0].properties['事故内容'];
+                var shishasu = parseInt(e.features[0].properties['死者数']);
+                var fushoshasu = parseInt(e.features[0].properties['負傷者数']);
+                var rosemmei = e.features[0].properties['路線名'];
+                var jogesen = e.features[0].properties['上下線'];
+                var hasseinichiji = e.features[0].properties['発生日時_年'] + '年' + e.features[0].properties['発生日時_月'] + '月' + e.features[0].properties['発生日時_日'] + '日' + e.features[0].properties['発生日時_時'] + '時' + e.features[0].properties['発生日時_分'] + '分';
+                var tenko = e.features[0].properties['天候'];
+                var chikei = e.features[0].properties['地形'];
+                var romenjotai = e.features[0].properties['路面状態'];
+                var dorokeijo = e.features[0].properties['道路形状'];
+                var shingoki = e.features[0].properties['信号機'];
+                var shadofukuin = e.features[0].properties['車道幅員'];
+                var dorosenkei = e.features[0].properties['道路線形'];
+                var shototsuchiten = e.features[0].properties['衝突地点'];
+                var zonkisei = e.features[0].properties['ゾーン規制'];
+                var chuobunritaishisetsuto = e.features[0].properties['中央分離帯施設等'];
+                var hoshadokubun = e.features[0].properties['歩車道区分'];
+                var jikoruikei = e.features[0].properties['事故類型'];
+
+                var nenrei_a = e.features[0].properties['年齢（当事者A）'];
+                var nenrei_b = e.features[0].properties['年齢（当事者B）'];
+                var tojishashubetsu_a = e.features[0].properties['当事者種別（当事者A）'];
+                var tojishashubetsu_b = e.features[0].properties['当事者種別（当事者B）'];
+                var yotobetsu_a = e.features[0].properties['用途別（当事者A）'];
+                var yotobetsu_b = e.features[0].properties['用途別（当事者B）'];
+                var sharyokeijo_a = e.features[0].properties['車両形状（当事者A）'];
+                var sharyokeijo_b = e.features[0].properties['車両形状（当事者B）'];
+                var sokudokisei_a = e.features[0].properties['速度規制（指定のみ）（当事者A）'];
+                var sokudokisei_b = e.features[0].properties['速度規制（指定のみ）（当事者B）'];
+                var ichijiteishikisei_hyoshiki_a = e.features[0].properties['一時停止規制_標識（当事者A）'];
+                var ichijiteishikisei_hyoji_a = e.features[0].properties['一時停止規制_表示（当事者A）'];
+                var ichijiteishikisei_hyoshiki_b = e.features[0].properties['一時停止規制_標識（当事者B）'];
+                var ichijiteishikisei_hyoji_b = e.features[0].properties['一時停止規制_表示（当事者B）'];
+                var sharyonoshototsubui_a = e.features[0].properties['車両の衝突部位（当事者A）'];
+                var sharyonoshototsubui_b = e.features[0].properties['車両の衝突部位（当事者B）'];
+                var sharyonosonkaiteido_a = e.features[0].properties['車両の損壊程度（当事者A）'];
+                var sharyonosonkaiteido_b = e.features[0].properties['車両の損壊程度（当事者B）'];
+                var eabaggunosobi_a = e.features[0].properties['エアバッグの装備（当事者A）'];
+                var eabaggunosobi_b = e.features[0].properties['エアバッグの装備（当事者B）'];
+                var saidoeabaggunosobi_a = e.features[0].properties['サイドエアバッグの装備（当事者A）'];
+                var saidoeabaggunosobi_b = e.features[0].properties['サイドエアバッグの装備（当事者B）'];
+                var jinshinsonshoteido_a = e.features[0].properties['人身損傷程度（当事者A）'];
+                var jinshinsonshoteido_b = e.features[0].properties['人身損傷程度（当事者B）'];
+
+                new maplibregl.Popup()
+                    .setLngLat(e.lngLat)
+                    .setHTML(
+                        // 事故内容
+                        '<b>' +
+                            '<big>' +
+                            '<font color="blue">' +
+                            '事故内容: ' +
+                            jikonaiyo +
+                            '</font>' +
+                            '</big>' +
+                            '</b>' +
+                            '<br>' +
+                            '発生日時: ' +
+                            hasseinichiji +
+                            '<br>' +
+                            '路線名: ' +
+                            rosemmei +
+                            '<br>' +
+                            '上下線: ' +
+                            jogesen +
+                            '<br>' +
+                            '死者数: ' +
+                            shishasu +
+                            '<br>' +
+                            '負傷者数: ' +
+                            fushoshasu +
+                            '<br>' +
+                            '天候: ' +
+                            tenko +
+                            '<br>' +
+                            '地形: ' +
+                            chikei +
+                            '<br>' +
+                            '路面状態: ' +
+                            romenjotai +
+                            '<br>' +
+                            '道路形状: ' +
+                            dorokeijo +
+                            '<br>' +
+                            '信号機: ' +
+                            shingoki +
+                            '<br>' +
+                            '車道幅員: ' +
+                            shadofukuin +
+                            '<br>' +
+                            '道路線形: ' +
+                            dorosenkei +
+                            '<br>' +
+                            '衝突地点: ' +
+                            shototsuchiten +
+                            '<br>' +
+                            'ゾーン規制: ' +
+                            zonkisei +
+                            '<br>' +
+                            '中央分離帯施設等: ' +
+                            chuobunritaishisetsuto +
+                            '<br>' +
+                            '歩車道区分: ' +
+                            hoshadokubun +
+                            '<br>' +
+                            '事故類型: ' +
+                            jikoruikei +
+                            '<br>' +
+                            // 表形式
+                            '<table ' +
+                            'style="font-size: 9pt; table-layout: fixed;"' +
+                            '>' +
+                            '<tr>' +
+                            '<th width="140">' +
+                            '項目' +
+                            '</th> ' +
+                            '<th width="100">' +
+                            '当事者A' +
+                            '</th> ' +
+                            '<th width="100">' +
+                            '当事者B' +
+                            '</th>' +
+                            '</tr>' +
+                            '<tr>' +
+                            '<td>' +
+                            '年齢層' +
+                            '</td> ' +
+                            '<td>' +
+                            nenrei_a +
+                            '</td> ' +
+                            '<td>' +
+                            nenrei_b +
+                            '</td>' +
+                            '</tr>' +
+                            '<tr>' +
+                            '<td>' +
+                            '当事者種別' +
+                            '</td> ' +
+                            '<td>' +
+                            tojishashubetsu_a +
+                            '</td> ' +
+                            '<td>' +
+                            tojishashubetsu_b +
+                            '</td>' +
+                            '</tr>' +
+                            '<tr>' +
+                            '<td>' +
+                            '車両の衝突部位' +
+                            '</td> ' +
+                            '<td>' +
+                            sharyonoshototsubui_a +
+                            '</td> ' +
+                            '<td>' +
+                            sharyonoshototsubui_b +
+                            '</td>' +
+                            '</tr>' +
+                            '<tr>' +
+                            '<td>' +
+                            '車両の損壊程度' +
+                            '</td> ' +
+                            '<td>' +
+                            sharyonosonkaiteido_a +
+                            '</td> ' +
+                            '<td>' +
+                            sharyonosonkaiteido_b +
+                            '</td>' +
+                            '</tr>' +
+                            '<tr>' +
+                            '<td>' +
+                            '人身損傷程度' +
+                            '</td> ' +
+                            '<td>' +
+                            jinshinsonshoteido_a +
+                            '</td> ' +
+                            '<td>' +
+                            jinshinsonshoteido_b +
+                            '</td>' +
+                            '</tr>' +
+                            '<tr>' +
+                            '<td>' +
+                            '用途別' +
+                            '</td> ' +
+                            '<td>' +
+                            yotobetsu_a +
+                            '</td> ' +
+                            '<td>' +
+                            yotobetsu_b +
+                            '</td>' +
+                            '</tr>' +
+                            '<tr>' +
+                            '<td>' +
+                            '車両形状' +
+                            '</td> ' +
+                            '<td>' +
+                            sharyokeijo_a +
+                            '</td> ' +
+                            '<td>' +
+                            sharyokeijo_b +
+                            '</td>' +
+                            '</tr>' +
+                            '<tr>' +
+                            '<td>' +
+                            '速度規制（指定のみ）' +
+                            '</td> ' +
+                            '<td>' +
+                            sokudokisei_a +
+                            '</td> ' +
+                            '<td>' +
+                            sokudokisei_b +
+                            '</td>' +
+                            '</tr>' +
+                            '<tr>' +
+                            '<td>' +
+                            '一時停止規制_標識' +
+                            '</td> ' +
+                            '<td>' +
+                            ichijiteishikisei_hyoshiki_a +
+                            '</td> ' +
+                            '<td>' +
+                            ichijiteishikisei_hyoshiki_b +
+                            '</td>' +
+                            '</tr>' +
+                            '<tr>' +
+                            '<td>' +
+                            '一時停止規制_表示' +
+                            '</td> ' +
+                            '<td>' +
+                            ichijiteishikisei_hyoji_a +
+                            '</td> ' +
+                            '<td>' +
+                            ichijiteishikisei_hyoji_b +
+                            '</td>' +
+                            '</tr>' +
+                            '<tr>' +
+                            '<td>' +
+                            'ｴｱﾊﾞｯｸﾞの装備' +
+                            '</td> ' +
+                            '<td>' +
+                            eabaggunosobi_a +
+                            '</td> ' +
+                            '<td>' +
+                            eabaggunosobi_b +
+                            '</td>' +
+                            '</tr>' +
+                            '<tr>' +
+                            '<td>' +
+                            'ｻｲﾄﾞｴｱﾊﾞｯｸﾞの装備' +
+                            '</td> ' +
+                            '<td>' +
+                            saidoeabaggunosobi_a +
+                            '</td> ' +
+                            '<td>' +
+                            saidoeabaggunosobi_b +
+                            '</td>' +
+                            '</tr>' +
+                            '<table>' +
+                            '座標: ' +
+                            lat.toFixed(7) +
+                            ',' +
+                            lng.toFixed(7) +
+                            ' ※事故発生位置の座標<br>' +
+                            '<a href=\https://www.google.com/maps?q=' +
+                            lat +
+                            ',' +
+                            lng +
+                            "&hl=ja' target='_blank'>🌎Google Maps</a>" +
+                            ' ' +
+                            '<a href=\https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=' +
+                            lat +
+                            ',' +
+                            lng +
+                            "&hl=ja' target='_blank'>📷Street View</a>"
+                    )
+                    .addTo(map);
             });
-
-            // 小学校ポイントレイヤ
-            map.addLayer({
-                "id": "school-1",
-                "source": "pmtiles-school",
-                "source-layer": "P2921_primary_school",
-                "type": "circle",
-                minzoom: 13,
-                maxzoom: 23,
-                'paint': {
-                    'circle-color': 'rgba(38, 152, 0, 1)',
-                    'circle-blur': 0.8,
-                    'circle-radius': 12
-                }
-            });
-
-            // 小学校ポイントレイヤ
-            map.addLayer({
-                "id": "school-2",
-                "source": "pmtiles-school",
-                "source-layer": "P2921_primary_school",
-                "type": "circle",
-                minzoom: 13,
-                maxzoom: 23,
-                'paint': {
-                    'circle-color': 'rgba(216, 255, 204, 1)',
-                    'circle-radius': 6
-                }
-            });
-
-            // 小学校ラベルレイヤ
-            map.addLayer({
-                id: 'school-label',
-                type: 'symbol',
-                source: 'pmtiles-school',
-                "source-layer": "P2921_primary_school",
-                minzoom: 13,
-                maxzoom: 23,
-                layout: {
-                    'text-field': ['get', 'P29_004'],
-                    'text-font': ['Open Sans Semibold', 'Arial Unicode MS Bold'],
-                    'text-size': 12,
-                    'text-offset': [0, -1.2]
-                },
-                paint: {
-                    'text-color': 'rgba(0,　152,　0, 1)',
-                    'text-halo-blur': 1,
-                    'text-halo-color': 'rgba(255, 255, 255, 1)',
-                    'text-halo-width': 1.5
-                }
-            });
-
-            // 交通事故データベクトルタイル（PMTiles）
-            map.addSource("pmtiles-jiko", {
-                type: "vector",
-                url: "pmtiles://" + PMTILES_JIKO_URL,
-                attribution: '<a href="https://www.npa.go.jp/publications/statistics/koutsuu/opendata/index_opendata.html">交通事故統計情報のオープンデータ（2019～2022年）（警察庁Webサイト）を加工して作成</a>'
-            });
-
-            // 死亡事故ポイントレイヤ
-            map.addLayer({
-                "id": "shiboujiko-1",
-                "source": "pmtiles-jiko",
-                // "source-layer": "honhyo_20192021_convert",
-                // "source-layer": "honhyo_20192021_convert_v2fgb",
-                "source-layer": "honhyo_20192022_convertfgb",
-                "type": "circle",
-                'paint': {
-                    'circle-color': 'rgba(203, 0, 0, 1)',
-                    'circle-blur': 1,
-                    'circle-radius': 12
-                }
-            });
-
-            // 死亡事故ポイントレイヤ
-            map.addLayer({
-                "id": "shiboujiko-2",
-                "source": "pmtiles-jiko",
-                //"source-layer": "honhyo_20192021_convert",
-                // "source-layer": "honhyo_20192021_convert_v2fgb",
-                "source-layer": "honhyo_20192022_convertfgb",
-                "type": "circle",
-                'paint': {
-                    'circle-color': 'rgba(255, 0, 0, 1)',
-                    'circle-radius': 5
-                }
-            });
-
-            // 死亡事故ラベルレイヤ
-            map.addLayer({
-                'id': 'shiboujiko-label',
-                'type': 'symbol',
-                "source": "pmtiles-jiko",
-                "source-layer": "honhyo_20192022_convertfgb",
-                "minzoom": 16,
-                "maxzoom": 23,
-                'layout': {
-                    'text-field': ['concat', ['get', '発生日時_年'], '/', ['get', '発生日時_月'], '/', ['get', '発生日時_日']],
-                    'text-font': ['Open Sans Semibold', 'Arial Unicode MS Bold'],
-                    'text-offset': [0, -1],
-                    'text-allow-overlap': true,
-                    'text-size': 12
-                },
-                'paint': {
-                    'text-color': 'rgba(255, 0, 0, 1)',
-                    'text-halo-color': 'rgba(255, 255, 255, 1)',
-                    'text-halo-width': 1
-                }
-            });
-
-            // 死亡事故レイヤのフィルタ設定
-            map.setFilter('shiboujiko-1', ['==', '事故内容', '死亡事故']);
-            map.setFilter('shiboujiko-2', ['==', '事故内容', '死亡事故']);
-            map.setFilter('shiboujiko-label', ['==', '事故内容', '死亡事故']);
-
-            // 負傷事故ポイントレイヤ
-            map.addLayer({
-                "id": "fushoujiko-1",
-                "source": "pmtiles-jiko",
-                //"source-layer": "honhyo_20192021_convert",
-                // "source-layer": "honhyo_20192021_convert_v2fgb",
-                "source-layer": "honhyo_20192022_convertfgb",
-                "type": "circle",
-                'paint': {
-                    'circle-color': 'rgba(0, 0, 255, 0.6)',
-                    'circle-blur': 0.8,
-                    'circle-radius': 12
-                }
-            });
-
-            // 負傷事故ポイントレイヤ
-            map.addLayer({
-                "id": "fushoujiko-2",
-                "source": "pmtiles-jiko",
-                //"source-layer": "honhyo_20192021_convert",
-                // "source-layer": "honhyo_20192021_convert_v2fgb",
-                "source-layer": "honhyo_20192022_convertfgb",
-                "type": "circle",
-                'paint': {
-                    'circle-color': 'rgba(229, 229, 255, 1)',
-                    'circle-radius': 5
-                }
-            });
-
-            map.addLayer({
-                'id': 'fushoujiko-label',
-                'type': 'symbol',
-                "source": "pmtiles-jiko",
-                "source-layer": "honhyo_20192022_convertfgb",
-                "minzoom": 16,
-                "maxzoom": 23,
-                'layout': {
-                    'text-field': ['concat', ['get', '発生日時_年'], '/', ['get', '発生日時_月'], '/', ['get', '発生日時_日']],
-                    'text-font': ['Open Sans Semibold', 'Arial Unicode MS Bold'],
-                    'text-offset': [0, -1],
-                    'text-allow-overlap': true,
-                    'text-size': 12
-                },
-                'paint': {
-                    'text-color': 'rgba(0, 0, 255, 1)',
-                    'text-halo-color': 'rgba(255, 255, 255, 1)',
-                    'text-halo-width': 1
-                }
-            });
-
-            // 負傷事故レイヤのフィルタ設定
-            map.setFilter('fushoujiko-1', ['==', '事故内容', '負傷事故']);
-            map.setFilter('fushoujiko-2', ['==', '事故内容', '負傷事故']);
-            map.setFilter('fushoujiko-label', ['==', '事故内容', '負傷事故']);
-
-            map.showTileBoundaries = false;
-
-            // マウスポインタの座標（フルスクリーンモードで消えるバグあり、スマホで表示されない）
-            map.on('mousemove', (e) => {
-                document.getElementById('info').innerHTML =
-                    JSON.stringify('緯度=' + e.lngLat.lat.toFixed(5) + ', 経度=' + e.lngLat.lng.toFixed(5));
-            });
-
-        })
-
-        // 死亡事故ポップアップ表示
-        map.on('click', 'shiboujiko-1', (e) => {
-            // var lng = e.lngLat.lng;
-            // var lat = e.lngLat.lat;
-            var lng = e.features[0].geometry.coordinates[0];
-            var lat = e.features[0].geometry.coordinates[1];
-
-            var jikonaiyo = e.features[0].properties['事故内容'];
-            var shishasu = parseInt(e.features[0].properties['死者数']);
-            var fushoshasu = parseInt(e.features[0].properties['負傷者数']);
-            var rosemmei = e.features[0].properties['路線名'];
-            var jogesen = e.features[0].properties['上下線'];
-            var hasseinichiji = e.features[0].properties['発生日時_年']
-                + '年' + e.features[0].properties['発生日時_月'] + '月'
-                + e.features[0].properties['発生日時_日'] + '日'
-                + e.features[0].properties['発生日時_時'] + '時'
-                + e.features[0].properties['発生日時_分'] + '分';
-            var tenko = e.features[0].properties['天候'];
-            var chikei = e.features[0].properties['地形'];
-            var romenjotai = e.features[0].properties['路面状態'];
-            var dorokeijo = e.features[0].properties['道路形状'];
-            var shingoki = e.features[0].properties['信号機'];
-            var shadofukuin = e.features[0].properties['車道幅員'];
-            var dorosenkei = e.features[0].properties['道路線形'];
-            var shototsuchiten = e.features[0].properties['衝突地点'];
-            var zonkisei = e.features[0].properties['ゾーン規制'];
-            var chuobunritaishisetsuto = e.features[0].properties['中央分離帯施設等'];
-            var hoshadokubun = e.features[0].properties['歩車道区分'];
-            var jikoruikei = e.features[0].properties['事故類型'];
-
-            var nenrei_a = e.features[0].properties['年齢（当事者A）'];
-            var nenrei_b = e.features[0].properties['年齢（当事者B）'];
-            var tojishashubetsu_a = e.features[0].properties['当事者種別（当事者A）'];
-            var tojishashubetsu_b = e.features[0].properties['当事者種別（当事者B）'];
-            var yotobetsu_a = e.features[0].properties['用途別（当事者A）'];
-            var yotobetsu_b = e.features[0].properties['用途別（当事者B）'];
-            var sharyokeijo_a = e.features[0].properties['車両形状（当事者A）'];
-            var sharyokeijo_b = e.features[0].properties['車両形状（当事者B）'];
-            var sokudokisei_a = e.features[0].properties['速度規制（指定のみ）（当事者A）'];
-            var sokudokisei_b = e.features[0].properties['速度規制（指定のみ）（当事者B）'];
-            var ichijiteishikisei_hyoshiki_a = e.features[0].properties['一時停止規制_標識（当事者A）'];
-            var ichijiteishikisei_hyoji_a = e.features[0].properties['一時停止規制_表示（当事者A）'];
-            var ichijiteishikisei_hyoshiki_b = e.features[0].properties['一時停止規制_標識（当事者B）'];
-            var ichijiteishikisei_hyoji_b = e.features[0].properties['一時停止規制_表示（当事者B）'];
-            var sharyonoshototsubui_a = e.features[0].properties['車両の衝突部位（当事者A）'];
-            var sharyonoshototsubui_b = e.features[0].properties['車両の衝突部位（当事者B）'];
-            var sharyonosonkaiteido_a = e.features[0].properties['車両の損壊程度（当事者A）'];
-            var sharyonosonkaiteido_b = e.features[0].properties['車両の損壊程度（当事者B）'];
-            var eabaggunosobi_a = e.features[0].properties['エアバッグの装備（当事者A）'];
-            var eabaggunosobi_b = e.features[0].properties['エアバッグの装備（当事者B）'];
-            var saidoeabaggunosobi_a = e.features[0].properties['サイドエアバッグの装備（当事者A）'];
-            var saidoeabaggunosobi_b = e.features[0].properties['サイドエアバッグの装備（当事者B）'];
-            var jinshinsonshoteido_a = e.features[0].properties['人身損傷程度（当事者A）'];
-            var jinshinsonshoteido_b = e.features[0].properties['人身損傷程度（当事者B）'];
-
-            new maplibregl.Popup()
-                .setLngLat(e.lngLat)
-                .setHTML(
-                    // 事故内容
-                    '<b>' + '<big>' + '<font color="red">' + '事故内容: ' + jikonaiyo + '</font>' + '</big>' + '</b>' + '<br>'
-                    + '発生日時: ' + hasseinichiji + '<br>'
-                    + '路線名: ' + rosemmei + '<br>'
-                    + '上下線: ' + jogesen + '<br>'
-                    + '死者数: ' + shishasu + '<br>'
-                    + '負傷者数: ' + fushoshasu + '<br>'
-                    + '天候: ' + tenko + '<br>'
-                    + '地形: ' + chikei + '<br>'
-                    + '路面状態: ' + romenjotai + '<br>'
-                    + '道路形状: ' + dorokeijo + '<br>'
-                    + '信号機: ' + shingoki + '<br>'
-                    + '車道幅員: ' + shadofukuin + '<br>'
-                    + '道路線形: ' + dorosenkei + '<br>'
-                    + '衝突地点: ' + shototsuchiten + '<br>'
-                    + 'ゾーン規制: ' + zonkisei + '<br>'
-                    + '中央分離帯施設等: ' + chuobunritaishisetsuto + '<br>'
-                    + '歩車道区分: ' + hoshadokubun + '<br>'
-                    + '事故類型: ' + jikoruikei + '<br>'
-
-                    /*
-                    // 当事者A
-                    + '<b>' + '<big>' + '<font color="black">' + '当事者A' + '</font>' + '</big>' + '</b>' + '<br>'
-                    + '人身損傷程度（当事者A）: ' + jinshinsonshoteido_a + '<br>'
-                    + '年齢（当事者A）: ' + nenrei_a + '<br>'
-                    + '当事者種別（当事者A）: ' + tojishashubetsu_a + '<br>'
-                    + '用途別（当事者A）: ' + yotobetsu_a + '<br>'
-                    + '車両形状（当事者A）: ' + sharyokeijo_a + '<br>'
-                    + '速度規制（指定のみ）（当事者A）: ' + sokudokisei_a + '<br>'
-                    + '一時停止規制_標識（当事者A）: ' + ichijiteishikisei_hyoshiki_a + '<br>'
-                    + '一時停止規制_表示（当事者A）: ' + ichijiteishikisei_hyoji_a + '<br>'
-                    + '車両の衝突部位（当事者A）: ' + sharyonoshototsubui_a + '<br>'
-                    + '車両の損壊程度（当事者A）: ' + sharyonosonkaiteido_a + '<br>'
-                    + 'エアバッグの装備（当事者A）: ' + eabaggunosobi_a + '<br>'
-                    + 'サイドエアバッグの装備（当事者A）: ' + saidoeabaggunosobi_a + '<br>'
-
-                    // 当事者B
-                    + '<b>' + '<big>' + '<font color="black">' + '当事者B' + '</font>' + '</big>' + '</b>' + '<br>'
-                    + '人身損傷程度（当事者B）: ' + jinshinsonshoteido_b + '<br>'
-                    + '年齢（当事者B）: ' + nenrei_b + '<br>'
-                    + '当事者種別（当事者B）: ' + tojishashubetsu_b + '<br>'
-                    + '用途別（当事者B）: ' + yotobetsu_b + '<br>'
-                    + '車両形状（当事者B）: ' + sharyokeijo_b + '<br>'
-                    + '速度規制（指定のみ）（当事者B）: ' + sokudokisei_b + '<br>'
-                    + '一時停止規制_標識（当事者B）: ' + ichijiteishikisei_hyoshiki_b + '<br>'
-                    + '一時停止規制_表示（当事者B）: ' + ichijiteishikisei_hyoji_b + '<br>'
-                    + '車両の衝突部位（当事者B）: ' + sharyonoshototsubui_b + '<br>'
-                    + '車両の損壊程度（当事者B）: ' + sharyonosonkaiteido_b + '<br>'
-                    + 'エアバッグの装備（当事者B）: ' + eabaggunosobi_b + '<br>'
-                    + 'サイドエアバッグの装備（当事者B）: ' + saidoeabaggunosobi_b + '<br>'
-                    */
-
-                    // 表形式
-                    + '<table>' +
-                    '<tr>' +
-                    '<th width="140">' + '項目' + '</th> ' + '<th width="100">' + '当事者A' + '</th> ' + '<th width="100">' + '当事者B' + '</th>' +
-                    '</tr>' +
-                    '<tr>' +
-                    '<td>' + '年齢層' + '</td> ' + '<td>' + nenrei_a + '</td> ' + '<td>' + nenrei_b + '</td>' +
-                    '</tr>' +
-                    '<tr>' +
-                    '<td>' + '当事者種別' + '</td> ' + '<td>' + tojishashubetsu_a + '</td> ' + '<td>' + tojishashubetsu_b + '</td>' +
-                    '</tr>' +
-                    '<tr>' +
-                    '<td>' + '車両の衝突部位' + '</td> ' + '<td>' + sharyonoshototsubui_a + '</td> ' + '<td>' + sharyonoshototsubui_b + '</td>' +
-                    '</tr>' +
-                    '<tr>' +
-                    '<td>' + '車両の損壊程度' + '</td> ' + '<td>' + sharyonosonkaiteido_a + '</td> ' + '<td>' + sharyonosonkaiteido_b + '</td>' +
-                    '</tr>' +
-                    '<tr>' +
-                    '<td>' + '人身損傷程度' + '</td> ' + '<td>' + jinshinsonshoteido_a + '</td> ' + '<td>' + jinshinsonshoteido_b + '</td>' +
-                    '</tr>' +
-                    '<tr>' +
-                    '<td>' + '用途別' + '</td> ' + '<td>' + yotobetsu_a + '</td> ' + '<td>' + yotobetsu_b + '</td>' +
-                    '</tr>' +
-                    '<tr>' +
-                    '<td>' + '車両形状' + '</td> ' + '<td>' + sharyokeijo_a + '</td> ' + '<td>' + sharyokeijo_b + '</td>' +
-                    '</tr>' +
-                    '<tr>' +
-                    '<td>' + '速度規制（指定のみ）' + '</td> ' + '<td>' + sokudokisei_a + '</td> ' + '<td>' + sokudokisei_b + '</td>' +
-                    '</tr>' +
-                    '<tr>' +
-                    '<td>' + '一時停止規制_標識' + '</td> ' + '<td>' + ichijiteishikisei_hyoshiki_a + '</td> ' + '<td>' + ichijiteishikisei_hyoshiki_b + '</td>' +
-                    '</tr>' +
-                    '<tr>' +
-                    '<td>' + '一時停止規制_表示' + '</td> ' + '<td>' + ichijiteishikisei_hyoji_a + '</td> ' + '<td>' + ichijiteishikisei_hyoji_b + '</td>' +
-                    '</tr>' +
-                    '<tr>' +
-                    '<td>' + 'ｴｱﾊﾞｯｸﾞの装備' + '</td> ' + '<td>' + eabaggunosobi_a + '</td> ' + '<td>' + eabaggunosobi_b + '</td>' +
-                    '</tr>' +
-                    '<tr>' +
-                    '<td>' + 'ｻｲﾄﾞｴｱﾊﾞｯｸﾞの装備' + '</td> ' + '<td>' + saidoeabaggunosobi_a + '</td> ' + '<td>' + saidoeabaggunosobi_b + '</td>' +
-                    '</tr>' +
-                    '<table>'
-                    + '座標: ' + lat.toFixed(7) + "," + lng.toFixed(7) + ' ※クリック位置の座標<br>'
-                    + '<a href=\https://www.google.com/maps?q=' + lat + "," + lng + "&hl=ja' target='_blank'>🌎Google Maps</a>" + ' '
-                    + '<a href=\https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=' + lat + "," + lng + "&hl=ja' target='_blank'>📷Street View</a>")
-                .addTo(map);
-        });
-
-        // 負傷事故ポップアップ表示
-        map.on('click', 'fushoujiko-1', (e) => {
-            // lng = e.lngLat.lng;
-            // lat = e.lngLat.lat;
-            var lng = e.features[0].geometry.coordinates[0];
-            var lat = e.features[0].geometry.coordinates[1];
-
-            var jikonaiyo = e.features[0].properties['事故内容'];
-            var shishasu = parseInt(e.features[0].properties['死者数']);
-            var fushoshasu = parseInt(e.features[0].properties['負傷者数']);
-            var rosemmei = e.features[0].properties['路線名'];
-            var jogesen = e.features[0].properties['上下線'];
-            var hasseinichiji = e.features[0].properties['発生日時_年']
-                + '年' + e.features[0].properties['発生日時_月'] + '月'
-                + e.features[0].properties['発生日時_日'] + '日'
-                + e.features[0].properties['発生日時_時'] + '時'
-                + e.features[0].properties['発生日時_分'] + '分';
-            var tenko = e.features[0].properties['天候'];
-            var chikei = e.features[0].properties['地形'];
-            var romenjotai = e.features[0].properties['路面状態'];
-            var dorokeijo = e.features[0].properties['道路形状'];
-            var shingoki = e.features[0].properties['信号機'];
-            var shadofukuin = e.features[0].properties['車道幅員'];
-            var dorosenkei = e.features[0].properties['道路線形'];
-            var shototsuchiten = e.features[0].properties['衝突地点'];
-            var zonkisei = e.features[0].properties['ゾーン規制'];
-            var chuobunritaishisetsuto = e.features[0].properties['中央分離帯施設等'];
-            var hoshadokubun = e.features[0].properties['歩車道区分'];
-            var jikoruikei = e.features[0].properties['事故類型'];
-
-            var nenrei_a = e.features[0].properties['年齢（当事者A）'];
-            var nenrei_b = e.features[0].properties['年齢（当事者B）'];
-            var tojishashubetsu_a = e.features[0].properties['当事者種別（当事者A）'];
-            var tojishashubetsu_b = e.features[0].properties['当事者種別（当事者B）'];
-            var yotobetsu_a = e.features[0].properties['用途別（当事者A）'];
-            var yotobetsu_b = e.features[0].properties['用途別（当事者B）'];
-            var sharyokeijo_a = e.features[0].properties['車両形状（当事者A）'];
-            var sharyokeijo_b = e.features[0].properties['車両形状（当事者B）'];
-            var sokudokisei_a = e.features[0].properties['速度規制（指定のみ）（当事者A）'];
-            var sokudokisei_b = e.features[0].properties['速度規制（指定のみ）（当事者B）'];
-            var ichijiteishikisei_hyoshiki_a = e.features[0].properties['一時停止規制_標識（当事者A）'];
-            var ichijiteishikisei_hyoji_a = e.features[0].properties['一時停止規制_表示（当事者A）'];
-            var ichijiteishikisei_hyoshiki_b = e.features[0].properties['一時停止規制_標識（当事者B）'];
-            var ichijiteishikisei_hyoji_b = e.features[0].properties['一時停止規制_表示（当事者B）'];
-            var sharyonoshototsubui_a = e.features[0].properties['車両の衝突部位（当事者A）'];
-            var sharyonoshototsubui_b = e.features[0].properties['車両の衝突部位（当事者B）'];
-            var sharyonosonkaiteido_a = e.features[0].properties['車両の損壊程度（当事者A）'];
-            var sharyonosonkaiteido_b = e.features[0].properties['車両の損壊程度（当事者B）'];
-            var eabaggunosobi_a = e.features[0].properties['エアバッグの装備（当事者A）'];
-            var eabaggunosobi_b = e.features[0].properties['エアバッグの装備（当事者B）'];
-            var saidoeabaggunosobi_a = e.features[0].properties['サイドエアバッグの装備（当事者A）'];
-            var saidoeabaggunosobi_b = e.features[0].properties['サイドエアバッグの装備（当事者B）'];
-            var jinshinsonshoteido_a = e.features[0].properties['人身損傷程度（当事者A）'];
-            var jinshinsonshoteido_b = e.features[0].properties['人身損傷程度（当事者B）'];
-
-            new maplibregl.Popup()
-                .setLngLat(e.lngLat)
-                .setHTML(
-                    // 事故内容
-                    '<b>' + '<big>' + '<font color="blue">' + '事故内容: ' + jikonaiyo + '</font>' + '</big>' + '</b>' + '<br>'
-                    + '発生日時: ' + hasseinichiji + '<br>'
-                    + '路線名: ' + rosemmei + '<br>'
-                    + '上下線: ' + jogesen + '<br>'
-                    + '死者数: ' + shishasu + '<br>'
-                    + '負傷者数: ' + fushoshasu + '<br>'
-                    + '天候: ' + tenko + '<br>'
-                    + '地形: ' + chikei + '<br>'
-                    + '路面状態: ' + romenjotai + '<br>'
-                    + '道路形状: ' + dorokeijo + '<br>'
-                    + '信号機: ' + shingoki + '<br>'
-                    + '車道幅員: ' + shadofukuin + '<br>'
-                    + '道路線形: ' + dorosenkei + '<br>'
-                    + '衝突地点: ' + shototsuchiten + '<br>'
-                    + 'ゾーン規制: ' + zonkisei + '<br>'
-                    + '中央分離帯施設等: ' + chuobunritaishisetsuto + '<br>'
-                    + '歩車道区分: ' + hoshadokubun + '<br>'
-                    + '事故類型: ' + jikoruikei + '<br>'
-
-                    /*
-                    // 当事者A
-                    + '<b>' + '<big>' + '<font color="black">' + '当事者A' + '</font>' + '</big>' + '</b>' + '<br>'
-                    + '人身損傷程度（当事者A）: ' + jinshinsonshoteido_a + '<br>'
-                    + '年齢（当事者A）: ' + nenrei_a + '<br>'
-                    + '当事者種別（当事者A）: ' + tojishashubetsu_a + '<br>'
-                    + '用途別（当事者A）: ' + yotobetsu_a + '<br>'
-                    + '車両形状（当事者A）: ' + sharyokeijo_a + '<br>'
-                    + '速度規制（指定のみ）（当事者A）: ' + sokudokisei_a + '<br>'
-                    + '一時停止規制_標識（当事者A）: ' + ichijiteishikisei_hyoshiki_a + '<br>'
-                    + '一時停止規制_表示（当事者A）: ' + ichijiteishikisei_hyoji_a + '<br>'
-                    + '車両の衝突部位（当事者A）: ' + sharyonoshototsubui_a + '<br>'
-                    + '車両の損壊程度（当事者A）: ' + sharyonosonkaiteido_a + '<br>'
-                    + 'エアバッグの装備（当事者A）: ' + eabaggunosobi_a + '<br>'
-                    + 'サイドエアバッグの装備（当事者A）: ' + saidoeabaggunosobi_a + '<br>'
-
-                    // 当事者B
-                    + '<b>' + '<big>' + '<font color="black">' + '当事者B' + '</font>' + '</big>' + '</b>' + '<br>'
-                    + '人身損傷程度（当事者B）: ' + jinshinsonshoteido_b + '<br>'
-                    + '年齢（当事者B）: ' + nenrei_b + '<br>'
-                    + '当事者種別（当事者B）: ' + tojishashubetsu_b + '<br>'
-                    + '用途別（当事者B）: ' + yotobetsu_b + '<br>'
-                    + '車両形状（当事者B）: ' + sharyokeijo_b + '<br>'
-                    + '速度規制（指定のみ）（当事者B）: ' + sokudokisei_b + '<br>'
-                    + '一時停止規制_標識（当事者B）: ' + ichijiteishikisei_hyoshiki_b + '<br>'
-                    + '一時停止規制_表示（当事者B）: ' + ichijiteishikisei_hyoji_b + '<br>'
-                    + '車両の衝突部位（当事者B）: ' + sharyonoshototsubui_b + '<br>'
-                    + '車両の損壊程度（当事者B）: ' + sharyonosonkaiteido_b + '<br>'
-                    + 'エアバッグの装備（当事者B）: ' + eabaggunosobi_b + '<br>'
-                    + 'サイドエアバッグの装備（当事者B）: ' + saidoeabaggunosobi_b + '<br>'
-                    */
-
-                    // 表形式
-                    + '<table ' + 'style="font-size: 9pt; table-layout: fixed;"' + '>' +
-                    '<tr>' +
-                    '<th width="140">' + '項目' + '</th> ' + '<th width="100">' + '当事者A' + '</th> ' + '<th width="100">' + '当事者B' + '</th>' +
-                    '</tr>' +
-                    '<tr>' +
-                    '<td>' + '年齢層' + '</td> ' + '<td>' + nenrei_a + '</td> ' + '<td>' + nenrei_b + '</td>' +
-                    '</tr>' +
-                    '<tr>' +
-                    '<td>' + '当事者種別' + '</td> ' + '<td>' + tojishashubetsu_a + '</td> ' + '<td>' + tojishashubetsu_b + '</td>' +
-                    '</tr>' +
-                    '<tr>' +
-                    '<td>' + '車両の衝突部位' + '</td> ' + '<td>' + sharyonoshototsubui_a + '</td> ' + '<td>' + sharyonoshototsubui_b + '</td>' +
-                    '</tr>' +
-                    '<tr>' +
-                    '<td>' + '車両の損壊程度' + '</td> ' + '<td>' + sharyonosonkaiteido_a + '</td> ' + '<td>' + sharyonosonkaiteido_b + '</td>' +
-                    '</tr>' +
-                    '<tr>' +
-                    '<td>' + '人身損傷程度' + '</td> ' + '<td>' + jinshinsonshoteido_a + '</td> ' + '<td>' + jinshinsonshoteido_b + '</td>' +
-                    '</tr>' +
-                    '<tr>' +
-                    '<td>' + '用途別' + '</td> ' + '<td>' + yotobetsu_a + '</td> ' + '<td>' + yotobetsu_b + '</td>' +
-                    '</tr>' +
-                    '<tr>' +
-                    '<td>' + '車両形状' + '</td> ' + '<td>' + sharyokeijo_a + '</td> ' + '<td>' + sharyokeijo_b + '</td>' +
-                    '</tr>' +
-                    '<tr>' +
-                    '<td>' + '速度規制（指定のみ）' + '</td> ' + '<td>' + sokudokisei_a + '</td> ' + '<td>' + sokudokisei_b + '</td>' +
-                    '</tr>' +
-                    '<tr>' +
-                    '<td>' + '一時停止規制_標識' + '</td> ' + '<td>' + ichijiteishikisei_hyoshiki_a + '</td> ' + '<td>' + ichijiteishikisei_hyoshiki_b + '</td>' +
-                    '</tr>' +
-                    '<tr>' +
-                    '<td>' + '一時停止規制_表示' + '</td> ' + '<td>' + ichijiteishikisei_hyoji_a + '</td> ' + '<td>' + ichijiteishikisei_hyoji_b + '</td>' +
-                    '</tr>' +
-                    '<tr>' +
-                    '<td>' + 'ｴｱﾊﾞｯｸﾞの装備' + '</td> ' + '<td>' + eabaggunosobi_a + '</td> ' + '<td>' + eabaggunosobi_b + '</td>' +
-                    '</tr>' +
-                    '<tr>' +
-                    '<td>' + 'ｻｲﾄﾞｴｱﾊﾞｯｸﾞの装備' + '</td> ' + '<td>' + saidoeabaggunosobi_a + '</td> ' + '<td>' + saidoeabaggunosobi_b + '</td>' +
-                    '</tr>' +
-                    '<table>'
-                    + '座標: ' + lat.toFixed(7) + "," + lng.toFixed(7) + ' ※クリック位置の座標<br>'
-                    + '<a href=\https://www.google.com/maps?q=' + lat + "," + lng + "&hl=ja' target='_blank'>🌎Google Maps</a>" + ' '
-                    + '<a href=\https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=' + lat + "," + lng + "&hl=ja' target='_blank'>📷Street View</a>")
-                .addTo(map);
-        });
-    </script>
-</body>
-
+        </script>
+    </body>
 </html>
