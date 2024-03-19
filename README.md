@@ -6,7 +6,7 @@ https://shi-works.github.io/npa-traffic-accident-map-on-maplibre-gl-js/
 
 ## 警察庁
 - 交通事故統計情報のオープンデータ（2019年、2020年、2021年、2022年）
-    - 出典：https://github.com/shi-works/traffic-accident-pmtiles
+    - 出典：https://github.com/shi-works/npa-traffic-accident-pmtiles
         - 原初データ出典：[交通事故統計情報のオープンデータ](https://www.npa.go.jp/publications/statistics/koutsuu/opendata/index_opendata.html)
         - ライセンス：警察庁Webサイトの[利用規約](https://www.npa.go.jp/rules/index.html)を参照。
     - 概要：警察庁が公開している、交通事故統計情報のオープンデータ（2019年、2020年、2021年、2022年）の本票をPMTiles形式に変換したデータです。
